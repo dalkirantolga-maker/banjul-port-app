@@ -2,6 +2,7 @@ import os
 import re
 import io
 import html
+import difflib
 from datetime import datetime
 
 import pandas as pd
@@ -9,6 +10,8 @@ import streamlit as st
 
 try:
     from PIL import Image, ImageOps
+    import numpy as np
+    import cv2
     import pytesseract
     OCR_AVAILABLE = True
 except Exception:
@@ -810,30 +813,202 @@ def select_history_number(number):
     st.session_state.container_query = number
 
 
+def _rank_clusters(clusters, top_n):
+    """Küme adaylarını hem üye sayısına hem de karakter yüksekliğine göre puanlar.
+    Konteyner numarası genelde konteyner üzerindeki en büyük punto yazıdır; bu yüzden
+    sadece en kalabalık kümeyi değil, en 'belirgin' (uzun + iri karakterli) kümeleri de dener."""
+
+    if not clusters:
+        return []
+
+    scored = []
+    for cluster in clusters:
+        heights = [b[3] for b in cluster]
+        median_h = sorted(heights)[len(heights) // 2]
+        scored.append((len(cluster) * median_h, cluster))
+
+    scored.sort(key=lambda s: s[0], reverse=True)
+
+    # Hem "en uzun" hem "en iri" kümeleri kapsayacak şekilde birleştir
+    by_count = sorted(clusters, key=len, reverse=True)
+
+    picked = []
+    seen_ids = set()
+    for _, cluster in scored:
+        if id(cluster) not in seen_ids:
+            picked.append(cluster)
+            seen_ids.add(id(cluster))
+        if len(picked) >= top_n:
+            break
+
+    for cluster in by_count:
+        if len(picked) >= top_n:
+            break
+        if id(cluster) not in seen_ids:
+            picked.append(cluster)
+            seen_ids.add(id(cluster))
+
+    return picked[:top_n]
+
+
+def _binarize_for_ocr(image_bytes):
+    """Fotoğrafı OCR için ikili (siyah/beyaz) görüntüye çevirir.
+    Konteynerler üzerindeki beyaz stencil yazı, koyu gövde renginden
+    Otsu eşiklemesiyle ayrıştırılır."""
+
+    pil_image = Image.open(io.BytesIO(image_bytes))
+    pil_image = ImageOps.exif_transpose(pil_image)
+    rgb = np.array(pil_image.convert("RGB"))
+    bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+
+    gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+    h, w = gray.shape
+    if max(h, w) < 1800:
+        scale = 1800 / max(h, w)
+        gray = cv2.resize(gray, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_CUBIC)
+
+    blur = cv2.GaussianBlur(gray, (5, 5), 0)
+    _, binary = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+    # Yazı beyaz, zemin koyu olmalı — tersiyse çevir
+    if (binary == 255).mean() > 0.5:
+        binary = cv2.bitwise_not(binary)
+
+    return binary
+
+
+def _find_character_boxes(binary_img):
+    """İkili görüntüdeki karakter adayı kutucuklarını (konturlarını) bulur."""
+
+    contours, _ = cv2.findContours(binary_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    h, w = binary_img.shape
+    boxes = []
+    for c in contours:
+        x, y, cw, ch = cv2.boundingRect(c)
+        if ch < h * 0.02 or ch > h * 0.35:
+            continue
+        if cw > w * 0.5:
+            continue
+        aspect = ch / max(cw, 1)
+        if aspect > 10 or aspect < 0.5:
+            continue
+        boxes.append((x, y, cw, ch))
+    return boxes
+
+
+def _cluster_boxes_1d(boxes, center_fn, size_fn, gap_mult=1.2):
+    """Kutucukları tek boyutta (x veya y ekseninde) yakınlıklarına göre gruplar.
+    Konteyner numarası ya dikey bir sütun (harf harf alt alta) ya da yatay bir
+    satır (normal yazı) halinde dizilmiş olabilir; bu iki durumu da yakalamak için kullanılır."""
+
+    if not boxes:
+        return []
+
+    boxes_sorted = sorted(boxes, key=center_fn)
+    clusters = []
+    current = [boxes_sorted[0]]
+    current_center = center_fn(boxes_sorted[0])
+
+    for b in boxes_sorted[1:]:
+        c = center_fn(b)
+        threshold = max(size_fn(b), size_fn(current[-1])) * gap_mult
+        if abs(c - current_center) <= threshold:
+            current.append(b)
+            current_center = sum(center_fn(bb) for bb in current) / len(current)
+        else:
+            clusters.append(current)
+            current = [b]
+            current_center = c
+
+    clusters.append(current)
+    return clusters
+
+
+def _ocr_single_character(binary_img, box):
+    """Tek bir karakteri (harf/rakam) kırpıp büyütüp okur."""
+
+    x, y, cw, ch = box
+    pad = 15
+    x0, y0 = max(0, x - pad), max(0, y - pad)
+    x1, y1 = min(binary_img.shape[1], x + cw + pad), min(binary_img.shape[0], y + ch + pad)
+
+    char_img = binary_img[y0:y1, x0:x1]
+    char_img = cv2.bitwise_not(char_img)  # Tesseract siyah yazı/beyaz zemine daha alışkın
+    char_img = cv2.copyMakeBorder(char_img, 30, 30, 30, 30, cv2.BORDER_CONSTANT, value=255)
+
+    target_h = 150
+    scale = target_h / char_img.shape[0]
+    char_img = cv2.resize(char_img, (int(char_img.shape[1] * scale), target_h), interpolation=cv2.INTER_CUBIC)
+
+    for psm in (10, 8, 7):
+        config = f"--psm {psm} -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        text = pytesseract.image_to_string(char_img, config=config).strip()
+        if text:
+            return text[0]
+    return ""
+
+
 def read_container_from_image(image_bytes):
-    """Kameradan çekilen fotoğrafı işleyip konteyner numarası tahmini çıkarır.
-    Dönüş: (ham_metin, normalize_edilmiş_tahmin)"""
+    """Kameradan çekilen fotoğrafı işleyip birden fazla konteyner numarası
+    tahmini (adayı) çıkarır. Konteyner üzerindeki yazı ya dikey (harf harf
+    alt alta) ya da yatay dizilmiş olabilir; ikisi de denenir.
+    Dönüş: normalize edilmiş tahmin listesi (en olası önce)."""
 
-    image = Image.open(io.BytesIO(image_bytes))
+    binary = _binarize_for_ocr(image_bytes)
+    boxes = _find_character_boxes(binary)
 
-    # Gri tona çevir, kontrastı artır, büyüt (OCR doğruluğunu artırmak için)
-    gray = ImageOps.exif_transpose(image).convert("L")
-    gray = ImageOps.autocontrast(gray, cutoff=2)
+    candidates = []
 
-    w, h = gray.size
-    if max(w, h) < 1200:
-        scale = 1200 / max(w, h)
-        gray = gray.resize((int(w * scale), int(h * scale)))
+    # 1) Dikey sütun (konteynerlerde en yaygın format: F/F/A/U/1/6/6/7/5/5/7)
+    x_clusters = _cluster_boxes_1d(
+        boxes, center_fn=lambda b: b[0] + b[2] / 2, size_fn=lambda b: b[2]
+    )
+    x_clusters = [c for c in x_clusters if len(c) >= 6]
+    for cluster in _rank_clusters(x_clusters, top_n=3):
+        ordered = sorted(cluster, key=lambda b: b[1])
+        text = "".join(_ocr_single_character(binary, b) for b in ordered)
+        candidates.append(normalize_container(text))
 
-    # Sadece büyük harf + rakam bekleniyor (konteyner numarası formatı)
+    # 2) Yatay satır (bazı konteynerlerde numara tek satır halinde yazılır)
+    y_clusters = _cluster_boxes_1d(
+        boxes, center_fn=lambda b: b[1] + b[3] / 2, size_fn=lambda b: b[3] * 0.6
+    )
+    y_clusters = [c for c in y_clusters if len(c) >= 6]
+    for cluster in _rank_clusters(y_clusters, top_n=2):
+        ordered = sorted(cluster, key=lambda b: b[0])
+        text = "".join(_ocr_single_character(binary, b) for b in ordered)
+        candidates.append(normalize_container(text))
+
+    # 3) Yedek: standart blok OCR + boşlukları silip ISO deseni arama
     config = "--psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-    raw_text = pytesseract.image_to_string(gray, config=config)
+    block_text = pytesseract.image_to_string(cv2.bitwise_not(binary), config=config)
+    stripped = re.sub(r"[^A-Z0-9]", "", block_text.upper())
+    match = re.search(r"[A-Z]{4}[0-9]{7}", stripped)
+    if match:
+        candidates.append(match.group(0))
 
-    # OCR çıktısından en olası konteyner numarasını (4 harf + 6-7 rakam) ayıkla
-    candidates = re.findall(r"[A-Z]{3,4}\s?U?\s?[0-9]{6,7}", raw_text.upper())
-    guess = normalize_container(candidates[0]) if candidates else normalize_container(raw_text)
+    # Boş olanları at, tekrarları temizle (sırayı koruyarak)
+    seen = set()
+    unique_candidates = []
+    for c in candidates:
+        if c and c not in seen:
+            seen.add(c)
+            unique_candidates.append(c)
 
-    return raw_text.strip(), guess
+    return unique_candidates
+
+
+def find_close_database_matches(guess, df, limit=3, cutoff=0.6):
+    """OCR tahminini mevcut konteyner veritabanıyla karşılaştırıp en yakın
+    gerçek kayıtları döndürür. OCR karakter bazında %100 doğru olmasa da,
+    limandaki gerçek konteyner listesiyle kıyaslayınca doğru numara genellikle
+    ayırt edilebilir hale gelir."""
+
+    if not guess:
+        return []
+
+    pool = df["_SEARCH"].tolist()
+    return difflib.get_close_matches(guess, pool, n=limit, cutoff=cutoff)
 
 
 def apply_ocr_guess(value):
@@ -1005,44 +1180,83 @@ with tab_single:
                     "`pytesseract`, `Pillow` paketleri ve `tesseract-ocr` motoru kurulu olmalı."
                 )
             else:
-                st.caption("Konteynerin üzerindeki numarayı net şekilde çerçeveye alıp fotoğraf çekin.")
+                st.caption(
+                    "Konteynerin üzerindeki numarayı olabildiğince yakından ve sadece o "
+                    "yazı alanı çerçeveye girecek şekilde fotoğraflayın — gövdenin geneli "
+                    "değil, sadece harf/rakamların olduğu bölüm. Bu, doğruluğu ciddi ölçüde artırır."
+                )
 
                 camera_photo = st.camera_input("Konteyner numarasının fotoğrafını çekin", key="ocr_camera")
 
                 if camera_photo is not None:
                     with st.spinner("Fotoğraf okunuyor..."):
                         try:
-                            raw_text, ocr_guess = read_container_from_image(camera_photo.getvalue())
+                            ocr_candidates = read_container_from_image(camera_photo.getvalue())
                         except Exception:
-                            raw_text, ocr_guess = "", ""
+                            ocr_candidates = []
 
-                    if not ocr_guess:
-                        st.warning("Numarayı okuyamadım. Daha net, yakın ve iyi ışıklı bir fotoğraf deneyin.")
+                    # Öneri sırası: DB'de birebir bulunanlar > DB'ye en yakın gerçek kayıtlar >
+                    # format olarak geçerli ham tahminler > diğer ham tahminler
+                    known_numbers = set(df["_SEARCH"])
+                    suggestions = []
+
+                    def _add_suggestion(number):
+                        if number and number not in suggestions:
+                            suggestions.append(number)
+
+                    for c in ocr_candidates:
+                        if is_valid_format(c) and c in known_numbers:
+                            _add_suggestion(c)
+
+                    for c in ocr_candidates:
+                        for m in find_close_database_matches(c, df):
+                            _add_suggestion(m)
+
+                    for c in ocr_candidates:
+                        if is_valid_format(c):
+                            _add_suggestion(c)
+
+                    for c in ocr_candidates:
+                        _add_suggestion(c)
+
+                    suggestions = suggestions[:4]
+
+                    if not suggestions:
+                        st.warning(
+                            "Numarayı okuyamadım. Konteynerin sadece numara yazan kısmını "
+                            "yakından, net ve düz açıyla çerçeveleyip tekrar deneyin."
+                        )
                     else:
-                        if is_valid_format(ocr_guess):
-                            st.html(
-                                f'<div class="format-hint format-ok">✓ Okunan numara: {safe(ocr_guess)}</div>'
-                            )
-                        else:
-                            st.html(
-                                f'<div class="format-hint format-bad">⚠ Okunan numara format ile tam eşleşmiyor, '
-                                f'lütfen kontrol edin: {safe(ocr_guess)}</div>'
-                            )
+                        st.caption(
+                            "Aşağıdaki tahminlerden doğru olanı seçin — birebir eşleşme "
+                            "bulunamadıysa veritabanındaki en yakın gerçek kayıtlar önerildi:"
+                        )
 
-                        col_use, col_retry = st.columns(2)
+                        for idx, number in enumerate(suggestions):
+                            is_known = number in known_numbers
 
-                        with col_use:
+                            if is_known:
+                                rec = df[df["_SEARCH"] == number].iloc[0]
+                                line_name = normalize_line(clean_value(rec, "AGENT"))
+                                vessel_name = clean_value(rec, "VESSEL NAME")
+                                label = f"✓ {number}"
+                                caption = f"Veritabanında bulundu — {line_name}"
+                                if vessel_name != "-":
+                                    caption += f" • {vessel_name}"
+                            else:
+                                label = f"? {number}"
+                                caption = "Veritabanında birebir yok — OCR tahmini, dikkatli kontrol edin"
+
                             st.button(
-                                "Bu numarayı kullan",
-                                type="primary",
+                                label,
+                                key=f"ocr_suggestion_{idx}",
                                 use_container_width=True,
-                                key="ocr_use_button",
                                 on_click=apply_ocr_guess,
-                                args=(ocr_guess,)
+                                args=(number,)
                             )
+                            st.caption(caption)
 
-                        with col_retry:
-                            st.caption("Yanlışsa aşağıdaki alana elle düzeltip devam edebilirsiniz.")
+                        st.caption("Yanlışsa aşağıdaki alana elle düzeltip devam edebilirsiniz.")
 
         container_input = st.text_input(
             "Konteyner Numarası",
