@@ -7,7 +7,7 @@ import streamlit as st
 
 
 # =========================================================
-# PAGE CONFIG
+# PAGE
 # =========================================================
 
 st.set_page_config(
@@ -21,7 +21,7 @@ EXCEL_FILE = "containers.xlsx"
 
 
 # =========================================================
-# LINE SETTINGS
+# SHIPPING LINE MAP
 # =========================================================
 
 LINE_MAP = {
@@ -48,338 +48,235 @@ LINE_MAP = {
 }
 
 
-LINE_EMOJIS = {
-    "MAERSK": "🔷",
-    "CMA CGM": "🟠",
-    "MSC": "🟡",
-    "HAPAG-LLOYD": "🔴",
-    "ONE": "🟣",
-    "COSCO": "🔵",
-    "PIL": "🟢",
-    "OBT": "⚓"
-}
-
-
 # =========================================================
 # CSS
 # =========================================================
 
-CSS = """
+st.html("""
 <style>
 
-    #MainMenu {
-        visibility: hidden;
-    }
+#MainMenu {
+    visibility: hidden;
+}
 
-    footer {
-        visibility: hidden;
-    }
+footer {
+    visibility: hidden;
+}
 
-    header {
-        visibility: hidden;
-    }
+header {
+    visibility: hidden;
+}
 
-    .stApp {
-        background:
-            radial-gradient(
-                circle at top left,
-                rgba(30, 64, 175, 0.08),
-                transparent 32%
-            ),
-            radial-gradient(
-                circle at top right,
-                rgba(14, 116, 144, 0.08),
-                transparent 30%
-            ),
-            linear-gradient(
-                180deg,
-                #f8fafc 0%,
-                #eef3f8 100%
-            );
-    }
+.stApp {
+    background:
+        radial-gradient(circle at top left, rgba(24, 82, 122, 0.10), transparent 30%),
+        radial-gradient(circle at top right, rgba(9, 96, 117, 0.08), transparent 28%),
+        linear-gradient(180deg, #f8fafc 0%, #eef3f8 100%);
+}
 
-    .block-container {
-        max-width: 880px;
-        padding-top: 1.5rem;
-        padding-bottom: 3rem;
-    }
+.block-container {
+    max-width: 850px;
+    padding-top: 1.4rem;
+    padding-bottom: 3rem;
+}
 
-    h1, h2, h3 {
-        letter-spacing: -0.02em;
-    }
+/* HERO */
 
-    /* HERO */
-    .hero-box {
-        background:
-            linear-gradient(
-                135deg,
-                #061a2d 0%,
-                #0b355b 52%,
-                #155e75 100%
-            );
+.hero {
+    background:
+        linear-gradient(135deg, #071b2d 0%, #0b355b 55%, #14637a 100%);
+    border-radius: 24px;
+    padding: 38px 25px;
+    margin-bottom: 22px;
+    text-align: center;
+    box-shadow: 0 18px 45px rgba(15, 42, 65, 0.20);
+}
 
-        border-radius: 24px;
-        padding: 34px 28px;
-        margin-bottom: 20px;
+.hero-brand {
+    color: #9bc3d8;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 4px;
+}
 
-        box-shadow:
-            0 20px 50px rgba(15, 23, 42, 0.18);
+.hero-title {
+    color: white;
+    font-size: 40px;
+    font-weight: 900;
+    margin-top: 8px;
+}
 
-        border: 1px solid rgba(255,255,255,0.08);
-    }
+.hero-sub {
+    color: #d7e8f1;
+    margin-top: 7px;
+    font-size: 14px;
+}
 
-    .hero-company {
-        color: #9fc8df;
-        font-size: 13px;
-        font-weight: 800;
-        letter-spacing: 4px;
-        text-transform: uppercase;
-        text-align: center;
+/* DATABASE STATUS */
+
+.db-card {
+    background: white;
+    border: 1px solid #e3e8ef;
+    border-radius: 16px;
+    padding: 18px 20px;
+    box-shadow: 0 6px 20px rgba(15,23,42,0.05);
+}
+
+.db-label {
+    color: #7b8794;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.db-value {
+    color: #102a43;
+    font-size: 22px;
+    font-weight: 900;
+    margin-top: 5px;
+}
+
+/* INPUTS */
+
+div[data-testid="stTextInput"] input {
+    height: 62px;
+    border-radius: 13px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+div[data-baseweb="select"] > div {
+    min-height: 55px;
+    border-radius: 13px !important;
+}
+
+div.stButton > button {
+    min-height: 54px;
+    border-radius: 13px;
+    font-size: 16px;
+    font-weight: 800;
+}
+
+/* RESULT */
+
+.result-success {
+    background: linear-gradient(135deg, #157f46, #19a45a);
+    color: white;
+    border-radius: 16px;
+    padding: 17px;
+    text-align: center;
+    font-size: 20px;
+    font-weight: 900;
+    box-shadow: 0 10px 25px rgba(25,164,90,0.18);
+}
+
+.result-danger {
+    background: linear-gradient(135deg, #991b1b, #dc2626);
+    color: white;
+    border-radius: 16px;
+    padding: 18px;
+    text-align: center;
+    font-size: 23px;
+    font-weight: 900;
+    box-shadow: 0 10px 25px rgba(220,38,38,0.20);
+}
+
+.container-card {
+    background:
+        linear-gradient(135deg, #081b2d 0%, #0e4268 100%);
+    border-radius: 20px;
+    padding: 30px;
+    text-align: center;
+    margin-top: 15px;
+    margin-bottom: 18px;
+    box-shadow: 0 12px 32px rgba(15,42,65,0.18);
+}
+
+.container-label {
+    color: #a8c9dd;
+    font-size: 11px;
+    letter-spacing: 3px;
+    font-weight: 700;
+}
+
+.container-number {
+    color: white;
+    font-size: 34px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    margin-top: 5px;
+}
+
+.shipping-label {
+    color: #a8c9dd;
+    font-size: 11px;
+    letter-spacing: 3px;
+    font-weight: 700;
+    margin-top: 22px;
+}
+
+.shipping-line {
+    color: white;
+    font-size: 31px;
+    font-weight: 900;
+    margin-top: 4px;
+}
+
+/* INFO */
+
+div[data-testid="stMetric"] {
+    background-color: rgba(255,255,255,0.95);
+    border: 1px solid #e3e8ef;
+    border-radius: 15px;
+    padding: 17px;
+    box-shadow: 0 5px 16px rgba(15,23,42,0.04);
+}
+
+div[data-testid="stMetricLabel"] {
+    color: #758293;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+div[data-testid="stMetricValue"] {
+    color: #102a43;
+    font-size: 20px;
+    font-weight: 800;
+}
+
+.footer-custom {
+    text-align: center;
+    color: #8a98a8;
+    font-size: 11px;
+    margin-top: 35px;
+    letter-spacing: .4px;
+}
+
+@media (max-width: 600px) {
+
+    .hero {
+        padding: 28px 18px;
+        border-radius: 18px;
     }
 
     .hero-title {
-        color: white;
-        text-align: center;
-        font-size: 38px;
-        font-weight: 900;
-        margin-top: 8px;
-        margin-bottom: 8px;
+        font-size: 30px;
     }
 
-    .hero-subtitle {
-        color: #d7e7f1;
-        text-align: center;
-        font-size: 15px;
-        line-height: 1.6;
+    .container-number {
+        font-size: 27px;
     }
 
-    /* SEARCH CONTAINER */
-    div[data-testid="stVerticalBlockBorderWrapper"] {
-        border-radius: 18px !important;
-        border: 1px solid rgba(148, 163, 184, 0.28) !important;
-        background: rgba(255,255,255,0.82) !important;
-        box-shadow: 0 8px 28px rgba(15,23,42,0.06);
-        backdrop-filter: blur(10px);
+    .shipping-line {
+        font-size: 26px;
     }
-
-    /* TEXT INPUT */
-    div[data-testid="stTextInput"] input {
-        height: 62px;
-        border-radius: 14px;
-        text-align: center;
-        font-size: 24px;
-        font-weight: 800;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        background-color: #ffffff;
-    }
-
-    div[data-testid="stTextInput"] input:focus {
-        border-color: #0f4c75;
-        box-shadow: 0 0 0 3px rgba(15, 76, 117, 0.10);
-    }
-
-    /* SELECT BOX */
-    div[data-baseweb="select"] > div {
-        min-height: 56px;
-        border-radius: 14px !important;
-        background-color: white;
-    }
-
-    /* BUTTON */
-    div.stButton > button {
-        min-height: 54px;
-        border-radius: 14px;
-        font-weight: 800;
-        font-size: 16px;
-        transition: 0.2s;
-    }
-
-    div.stButton > button:hover {
-        transform: translateY(-1px);
-    }
-
-    /* METRIC CARD */
-    div[data-testid="stMetric"] {
-        background:
-            linear-gradient(
-                180deg,
-                rgba(255,255,255,0.98),
-                rgba(248,250,252,0.98)
-            );
-
-        border: 1px solid #e2e8f0;
-        border-radius: 15px;
-        padding: 18px;
-
-        box-shadow:
-            0 5px 18px
-            rgba(15,23,42,0.05);
-    }
-
-    div[data-testid="stMetricLabel"] {
-        color: #64748b;
-        font-weight: 700;
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.6px;
-    }
-
-    div[data-testid="stMetricValue"] {
-        color: #0f172a;
-        font-size: 21px;
-        font-weight: 800;
-    }
-
-    /* SUCCESS */
-    div[data-testid="stAlert"][data-baseweb="notification"] {
-        border-radius: 15px;
-    }
-
-    /* LINE HERO */
-    .line-card {
-        padding: 28px;
-        border-radius: 19px;
-        text-align: center;
-        color: white;
-        background:
-            linear-gradient(
-                135deg,
-                #0b2239,
-                #0f4c75
-            );
-
-        box-shadow:
-            0 12px 30px rgba(15, 76, 117, 0.18);
-
-        margin-top: 8px;
-        margin-bottom: 18px;
-    }
-
-    .line-label {
-        font-size: 12px;
-        letter-spacing: 3px;
-        font-weight: 700;
-        color: #b9d7e9;
-    }
-
-    .line-name {
-        font-size: 34px;
-        font-weight: 900;
-        margin-top: 5px;
-    }
-
-    .line-container {
-        font-size: 18px;
-        color: #e4eff6;
-        margin-top: 5px;
-        letter-spacing: 1px;
-    }
-
-    /* STATUS PILLS */
-    .verified-pill {
-        background:
-            linear-gradient(
-                135deg,
-                #15803d,
-                #16a34a
-            );
-
-        color: white;
-        text-align: center;
-        padding: 15px;
-        border-radius: 14px;
-        font-size: 19px;
-        font-weight: 900;
-
-        box-shadow:
-            0 8px 22px
-            rgba(22,163,74,0.18);
-    }
-
-    .wrong-pill {
-        background:
-            linear-gradient(
-                135deg,
-                #991b1b,
-                #dc2626
-            );
-
-        color: white;
-        text-align: center;
-        padding: 18px;
-        border-radius: 15px;
-        font-size: 23px;
-        font-weight: 900;
-
-        box-shadow:
-            0 10px 28px
-            rgba(220,38,38,0.22);
-    }
-
-    .stop-card {
-        background:
-            linear-gradient(
-                180deg,
-                #fff7f7,
-                #fff1f2
-            );
-
-        border: 2px solid #ef4444;
-        border-radius: 18px;
-        padding: 23px;
-        margin-top: 16px;
-
-        box-shadow:
-            0 10px 30px
-            rgba(220,38,38,0.10);
-    }
-
-    .footer-text {
-        text-align: center;
-        color: #94a3b8;
-        font-size: 11px;
-        letter-spacing: 0.4px;
-        margin-top: 35px;
-    }
-
-    /* MOBILE */
-    @media (max-width: 600px) {
-
-        .block-container {
-            padding-left: 1rem;
-            padding-right: 1rem;
-        }
-
-        .hero-box {
-            padding: 27px 18px;
-            border-radius: 18px;
-        }
-
-        .hero-title {
-            font-size: 29px;
-        }
-
-        .hero-subtitle {
-            font-size: 13px;
-        }
-
-        div[data-testid="stTextInput"] input {
-            font-size: 21px;
-        }
-
-        .line-name {
-            font-size: 29px;
-        }
-    }
+}
 
 </style>
-"""
-
-st.markdown(
-    CSS,
-    unsafe_allow_html=True
-)
+""")
 
 
 # =========================================================
@@ -387,7 +284,6 @@ st.markdown(
 # =========================================================
 
 def normalize_container(value):
-
     if pd.isna(value):
         return ""
 
@@ -401,7 +297,6 @@ def normalize_container(value):
 
 
 def normalize_line(value):
-
     if pd.isna(value):
         return "-"
 
@@ -410,23 +305,16 @@ def normalize_line(value):
     if not value:
         return "-"
 
-    return LINE_MAP.get(
-        value,
-        value
-    )
+    return LINE_MAP.get(value, value)
 
 
 def clean_value(record, column):
-
     if column not in record.index:
         return "-"
 
     value = str(record[column]).strip()
 
-    if not value:
-        return "-"
-
-    if value.lower() == "nan":
+    if not value or value.lower() == "nan":
         return "-"
 
     return value
@@ -449,11 +337,9 @@ def load_database(file_name, modified_time):
     df = df.fillna("")
 
     if "CONTAINER" not in df.columns:
-        raise ValueError(
-            "CONTAINER column is missing."
-        )
+        raise ValueError("CONTAINER column missing.")
 
-    df["_SEARCH_CONTAINER"] = (
+    df["_SEARCH"] = (
         df["CONTAINER"]
         .apply(normalize_container)
     )
@@ -461,38 +347,25 @@ def load_database(file_name, modified_time):
     return df
 
 
-def line_emoji(line):
-
-    return LINE_EMOJIS.get(
-        line,
-        "🚢"
-    )
-
-
 # =========================================================
 # HERO
 # =========================================================
 
-st.markdown(
-    """
-    <div class="hero-box">
-
-        <div class="hero-company">
-            ALPORT BANJUL
-        </div>
-
-        <div class="hero-title">
-            CONTAINER TRACKING
-        </div>
-
-        <div class="hero-subtitle">
-            Fast container verification for safe and accurate vessel loading
-        </div>
-
+st.html("""
+<div class="hero">
+    <div class="hero-brand">
+        ALPORT BANJUL
     </div>
-    """,
-    unsafe_allow_html=True
-)
+
+    <div class="hero-title">
+        CONTAINER TRACKING
+    </div>
+
+    <div class="hero-sub">
+        Container Identification & Shipping Line Verification
+    </div>
+</div>
+""")
 
 
 # =========================================================
@@ -502,7 +375,7 @@ st.markdown(
 if not os.path.exists(EXCEL_FILE):
 
     st.error(
-        "Container database is currently unavailable."
+        "Container database is unavailable."
     )
 
     st.stop()
@@ -534,24 +407,42 @@ update_time = datetime.fromtimestamp(
 
 
 # =========================================================
-# DATABASE STATUS
+# DATABASE CARDS
 # =========================================================
 
-status1, status2 = st.columns(2)
+db1, db2 = st.columns(2)
 
-with status1:
+with db1:
 
-    st.metric(
-        "Live Database",
-        f"{len(df):,}",
-        help="Total containers in the current database"
+    st.html(
+        f"""
+        <div class="db-card">
+            <div class="db-label">
+                Containers
+            </div>
+
+            <div class="db-value">
+                {len(df):,}
+            </div>
+        </div>
+        """
     )
 
-with status2:
 
-    st.metric(
-        "Last Updated",
-        update_time
+with db2:
+
+    st.html(
+        f"""
+        <div class="db-card">
+            <div class="db-label">
+                Last Update
+            </div>
+
+            <div class="db-value">
+                {update_time}
+            </div>
+        </div>
+        """
     )
 
 
@@ -559,26 +450,24 @@ st.write("")
 
 
 # =========================================================
-# SEARCH PANEL
+# SEARCH
 # =========================================================
 
-with st.container(
-    border=True
-):
+with st.container(border=True):
 
     st.subheader(
         "🔎 Container Verification"
     )
 
     st.caption(
-        "Select loading line and enter the container number."
+        "Select loading line and enter container number."
     )
 
     available_lines = sorted(
         {
-            normalize_line(agent)
-            for agent in df["AGENT"].unique()
-            if normalize_line(agent) != "-"
+            normalize_line(value)
+            for value in df["AGENT"].unique()
+            if normalize_line(value) != "-"
         }
     )
 
@@ -611,7 +500,7 @@ with st.container(
 
 
 # =========================================================
-# RESULT
+# SEARCH RESULT
 # =========================================================
 
 if search_button:
@@ -630,8 +519,7 @@ if search_button:
 
 
     result = df[
-        df["_SEARCH_CONTAINER"]
-        == search_number
+        df["_SEARCH"] == search_number
     ]
 
 
@@ -641,17 +529,16 @@ if search_button:
 
     if result.empty:
 
-        st.markdown(
+        st.html(
             """
-            <div class="wrong-pill">
+            <div class="result-danger">
                 ⛔ CONTAINER NOT FOUND
             </div>
-            """,
-            unsafe_allow_html=True
+            """
         )
 
         st.markdown(
-            f"# {search_number}"
+            f"## {search_number}"
         )
 
         st.error(
@@ -659,7 +546,7 @@ if search_button:
         )
 
         st.caption(
-            "The container is not available in the current database. "
+            "Container is not available in the current database. "
             "Contact Operations before loading."
         )
 
@@ -671,7 +558,7 @@ if search_button:
     elif len(result) > 1:
 
         st.warning(
-            "⚠️ DUPLICATE RECORD"
+            "⚠️ DUPLICATE CONTAINER RECORD"
         )
 
         st.markdown(
@@ -718,7 +605,7 @@ if search_button:
             "FULL-MTY"
         )
 
-        area = clean_value(
+        location = clean_value(
             record,
             "AREA"
         )
@@ -756,39 +643,49 @@ if search_button:
 
         if wrong_line:
 
-            st.markdown(
+            st.html(
                 """
-                <div class="wrong-pill">
+                <div class="result-danger">
                     🛑 STOP — WRONG SHIPPING LINE
                 </div>
-                """,
-                unsafe_allow_html=True
+                """
             )
 
-            st.markdown(
+            st.html(
                 f"""
-                <div class="stop-card">
-                    <h2 style="text-align:center;margin-bottom:4px;">
+                <div class="container-card">
+
+                    <div class="container-label">
+                        CONTAINER
+                    </div>
+
+                    <div class="container-number">
                         {container}
-                    </h2>
+                    </div>
+
+                    <div class="shipping-label">
+                        ACTUAL SHIPPING LINE
+                    </div>
+
+                    <div class="shipping-line">
+                        {shipping_line}
+                    </div>
+
                 </div>
-                """,
-                unsafe_allow_html=True
+                """
             )
 
-            wrong1, wrong2 = st.columns(2)
+            c1, c2 = st.columns(2)
 
-            with wrong1:
-
+            with c1:
                 st.metric(
                     "Container Line",
-                    f"{line_emoji(shipping_line)} {shipping_line}"
+                    shipping_line
                 )
 
-            with wrong2:
-
+            with c2:
                 st.metric(
-                    "Selected Loading Line",
+                    "Selected Line",
                     selected_line
                 )
 
@@ -803,49 +700,48 @@ if search_button:
 
         else:
 
-            st.markdown(
+            st.html(
                 """
-                <div class="verified-pill">
+                <div class="result-success">
                     ✓ CONTAINER VERIFIED
                 </div>
-                """,
-                unsafe_allow_html=True
+                """
             )
 
-            st.write("")
-
-            st.markdown(
+            st.html(
                 f"""
-                <div class="line-card">
+                <div class="container-card">
 
-                    <div class="line-label">
-                        SHIPPING LINE
+                    <div class="container-label">
+                        CONTAINER
                     </div>
 
-                    <div class="line-name">
-                        {line_emoji(shipping_line)}
-                        {shipping_line}
-                    </div>
-
-                    <div class="line-container">
+                    <div class="container-number">
                         {container}
                     </div>
 
+                    <div class="shipping-label">
+                        SHIPPING LINE
+                    </div>
+
+                    <div class="shipping-line">
+                        {shipping_line}
+                    </div>
+
                 </div>
-                """,
-                unsafe_allow_html=True
+                """
             )
 
 
             if selected_line != "No line selected":
 
                 st.success(
-                    f"✓ Correct line for {selected_line}"
+                    f"✓ Correct shipping line: {selected_line}"
                 )
 
 
             # =================================================
-            # INFO GRID
+            # DETAILS
             # =================================================
 
             col1, col2 = st.columns(2)
@@ -877,8 +773,8 @@ if search_button:
             with col4:
 
                 st.metric(
-                    "Location",
-                    area
+                    "Location / Area",
+                    location
                 )
 
 
@@ -899,38 +795,26 @@ if search_button:
                 )
 
 
-            # =================================================
-            # ADDITIONAL INFO
-            # =================================================
-
             if (
                 imo_class != "-"
                 or discharge_date != "-"
             ):
 
                 with st.expander(
-                    "More Container Details"
+                    "Additional Information"
                 ):
 
-                    info1, info2 = st.columns(2)
-
-                    with info1:
-
-                        st.caption(
-                            "IMO CLASS"
-                        )
+                    if imo_class != "-":
 
                         st.write(
+                            "**IMO Class:**",
                             imo_class
                         )
 
-                    with info2:
-
-                        st.caption(
-                            "DISCHARGE DATE"
-                        )
+                    if discharge_date != "-":
 
                         st.write(
+                            "**Discharge Date:**",
                             discharge_date
                         )
 
@@ -939,11 +823,8 @@ if search_button:
 # FOOTER
 # =========================================================
 
-st.markdown(
-    """
-    <div class="footer-text">
-        ALPORT BANJUL • CONTAINER VERIFICATION SYSTEM • OPERATIONS
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+st.html("""
+<div class="footer-custom">
+    ALPORT BANJUL • CONTAINER VERIFICATION SYSTEM • OPERATIONS
+</div>
+""")
