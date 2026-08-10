@@ -1,10 +1,18 @@
 import os
 import re
+import io
 import html
 from datetime import datetime
 
 import pandas as pd
 import streamlit as st
+
+try:
+    from PIL import Image, ImageOps
+    import pytesseract
+    OCR_AVAILABLE = True
+except Exception:
+    OCR_AVAILABLE = False
 
 
 # =========================================================
@@ -802,6 +810,36 @@ def select_history_number(number):
     st.session_state.container_query = number
 
 
+def read_container_from_image(image_bytes):
+    """Kameradan çekilen fotoğrafı işleyip konteyner numarası tahmini çıkarır.
+    Dönüş: (ham_metin, normalize_edilmiş_tahmin)"""
+
+    image = Image.open(io.BytesIO(image_bytes))
+
+    # Gri tona çevir, kontrastı artır, büyüt (OCR doğruluğunu artırmak için)
+    gray = ImageOps.exif_transpose(image).convert("L")
+    gray = ImageOps.autocontrast(gray, cutoff=2)
+
+    w, h = gray.size
+    if max(w, h) < 1200:
+        scale = 1200 / max(w, h)
+        gray = gray.resize((int(w * scale), int(h * scale)))
+
+    # Sadece büyük harf + rakam bekleniyor (konteyner numarası formatı)
+    config = "--psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    raw_text = pytesseract.image_to_string(gray, config=config)
+
+    # OCR çıktısından en olası konteyner numarasını (4 harf + 6-7 rakam) ayıkla
+    candidates = re.findall(r"[A-Z]{3,4}\s?U?\s?[0-9]{6,7}", raw_text.upper())
+    guess = normalize_container(candidates[0]) if candidates else normalize_container(raw_text)
+
+    return raw_text.strip(), guess
+
+
+def apply_ocr_guess(value):
+    st.session_state.container_query = value
+
+
 # =========================================================
 # ÜST ARAÇ ÇUBUĞU
 # =========================================================
@@ -958,6 +996,53 @@ with tab_single:
             st.write("")
 
         selected_line = st.selectbox("Yükleme Hattı", line_options, key="single_line_select")
+
+        with st.expander("📷 Kamera ile Numara Oku"):
+
+            if not OCR_AVAILABLE:
+                st.warning(
+                    "OCR kütüphaneleri kurulu değil. Bu özelliğin çalışması için sunucuda "
+                    "`pytesseract`, `Pillow` paketleri ve `tesseract-ocr` motoru kurulu olmalı."
+                )
+            else:
+                st.caption("Konteynerin üzerindeki numarayı net şekilde çerçeveye alıp fotoğraf çekin.")
+
+                camera_photo = st.camera_input("Konteyner numarasının fotoğrafını çekin", key="ocr_camera")
+
+                if camera_photo is not None:
+                    with st.spinner("Fotoğraf okunuyor..."):
+                        try:
+                            raw_text, ocr_guess = read_container_from_image(camera_photo.getvalue())
+                        except Exception:
+                            raw_text, ocr_guess = "", ""
+
+                    if not ocr_guess:
+                        st.warning("Numarayı okuyamadım. Daha net, yakın ve iyi ışıklı bir fotoğraf deneyin.")
+                    else:
+                        if is_valid_format(ocr_guess):
+                            st.html(
+                                f'<div class="format-hint format-ok">✓ Okunan numara: {safe(ocr_guess)}</div>'
+                            )
+                        else:
+                            st.html(
+                                f'<div class="format-hint format-bad">⚠ Okunan numara format ile tam eşleşmiyor, '
+                                f'lütfen kontrol edin: {safe(ocr_guess)}</div>'
+                            )
+
+                        col_use, col_retry = st.columns(2)
+
+                        with col_use:
+                            st.button(
+                                "Bu numarayı kullan",
+                                type="primary",
+                                use_container_width=True,
+                                key="ocr_use_button",
+                                on_click=apply_ocr_guess,
+                                args=(ocr_guess,)
+                            )
+
+                        with col_retry:
+                            st.caption("Yanlışsa aşağıdaki alana elle düzeltip devam edebilirsiniz.")
 
         container_input = st.text_input(
             "Konteyner Numarası",
