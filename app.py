@@ -48,15 +48,15 @@ LINE_MAP = {
 }
 
 
-# Her hat için görsel vurgu rengi (marka rengi, brass zeminle uyumlu tutuldu)
+# Her hat için görsel vurgu rengi
 LINE_COLORS = {
-    "MAERSK": "#1E7FA6",
+    "MAERSK": "#1E6FA6",
     "CMA CGM": "#C1501F",
-    "MSC": "#B08D3E",
+    "MSC": "#A6821E",
     "HAPAG-LLOYD": "#C1501F",
     "ONE": "#9C2B5E",
     "COSCO": "#1E4E8C",
-    "PIL": "#9C2B2B",
+    "PIL": "#B0281E",
     "OBT": "#1F6E4A"
 }
 
@@ -76,29 +76,31 @@ if "container_query" not in st.session_state:
 
 
 # =========================================================
-# CSS — "LİMAN KAYIT DEFTERİ" KİMLİĞİ
-# Navy + pirinç (brass) + parşömen zemin, deniz haritası dokusu
+# CSS — kurumsal, açık zeminli operasyon paneli
 # =========================================================
 
 BASE_CSS = """
 <style>
 
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600;700&display=swap');
 
 :root {
-    --navy: #0B1F30;
-    --navy-deep: #050D16;
-    --steel: #163A52;
-    --brass: #D9B84A;
-    --brass-deep: #C9A227;
-    --surface: #0F2033;
-    --surface-border: rgba(201,162,39,0.22);
-    --parchment: #F3EFE2;
-    --parchment-line: rgba(201,162,39,0.09);
-    --ink: #E7E4D8;
-    --ink-soft: #85A0B3;
-    --alert: #C24545;
-    --verified: #35A97C;
+    --navy: #0F2A44;
+    --navy-deep: #0A1E33;
+    --steel: #2B5A7D;
+    --gold: #B8860B;
+    --gold-soft: #D4A72C;
+    --bg: #F4F6F8;
+    --surface: #FFFFFF;
+    --border: #E1E6EB;
+    --ink: #1F2937;
+    --ink-soft: #6B7280;
+    --alert: #B91C1C;
+    --alert-bg: #FDECEC;
+    --verified: #157347;
+    --verified-bg: #E9F7EF;
+    --warn: #92660A;
+    --warn-bg: #FDF3DC;
 }
 
 #MainMenu { visibility: hidden; }
@@ -116,14 +118,10 @@ html, body, [class*="css"] {
 }
 
 h1, h2, h3, .stMarkdown h3 {
-    font-family: 'Fraunces', serif !important;
-    font-weight: 600 !important;
-    color: var(--parchment) !important;
-    letter-spacing: -0.3px;
-}
-
-p, span, label, .stCaption, div[data-testid="stCaptionContainer"] {
-    color: var(--ink) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 700 !important;
+    color: var(--navy) !important;
+    letter-spacing: -0.2px;
 }
 
 code, .stCode, div[data-testid="stTextInput"] input, div[data-testid="stTextArea"] textarea {
@@ -132,19 +130,10 @@ code, .stCode, div[data-testid="stTextInput"] input, div[data-testid="stTextArea
 
 
 /* =====================================================
-   SAYFA ZEMİNİ — deniz haritası kağıdı dokusu
+   SAYFA ZEMİNİ — düz, kurumsal
    ===================================================== */
 
-.stApp {
-    background-color: #060F1A;
-    background-image:
-        linear-gradient(var(--parchment-line) 1px, transparent 1px),
-        linear-gradient(90deg, var(--parchment-line) 1px, transparent 1px),
-        radial-gradient(circle at 8% 0%, rgba(201,162,39,0.09), transparent 32%),
-        radial-gradient(circle at 100% 100%, rgba(31,110,124,0.08), transparent 35%);
-    background-size: 42px 42px, 42px 42px, 100% 100%, 100% 100%;
-    background-attachment: fixed;
-}
+.stApp { background: var(--bg); }
 
 .block-container {
     max-width: 960px;
@@ -159,81 +148,53 @@ code, .stCode, div[data-testid="stTextInput"] input, div[data-testid="stTextArea
 
 .top-toolbar { display: flex; justify-content: flex-end; margin-bottom: 6px; }
 
-.eyebrow {
-    font-family: 'Inter', sans-serif;
-    font-size: 10.5px;
-    font-weight: 800;
-    letter-spacing: 2.6px;
-    text-transform: uppercase;
-    color: var(--brass-deep);
-}
-
 
 /* =====================================================
-   HERO — "kaptan köşkü" paneli
+   HERO
    ===================================================== */
-
-@keyframes heroFadeIn {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
-}
 
 .hero {
     position: relative;
     overflow: hidden;
-    min-height: 275px;
-    background:
-        radial-gradient(circle at 88% 15%, rgba(201,162,39,0.16), transparent 45%),
-        linear-gradient(155deg, var(--navy-deep) 0%, var(--navy) 55%, #0E2A40 100%);
-    border-radius: 6px;
-    padding: 40px 42px;
+    background: linear-gradient(135deg, var(--navy-deep) 0%, var(--navy) 60%, #123A5C 100%);
+    border-radius: 10px;
+    padding: 38px 42px;
     margin-bottom: 24px;
-    box-shadow: 0 24px 55px rgba(7, 22, 36, 0.35);
-    border: 1px solid rgba(201,162,39,0.35);
+    box-shadow: 0 10px 30px rgba(15,42,68,0.16);
 }
 
-.hero::before,
-.hero::after {
-    content: "";
-    position: absolute;
-    left: 18px; right: 18px;
-    height: 1px;
-    background: rgba(201,162,39,0.30);
-}
-.hero::before { top: 12px; }
-.hero::after { bottom: 12px; }
-
-.hero-content {
-    position: relative;
-    z-index: 3;
-    width: 58%;
-    animation: heroFadeIn 0.6s ease-out;
-}
+.hero-content { position: relative; z-index: 3; width: 62%; }
 
 .hero-brand {
-    color: var(--brass);
+    color: var(--gold-soft);
     font-size: 11.5px;
     font-weight: 800;
-    letter-spacing: 4px;
-    margin-bottom: 12px;
+    letter-spacing: 3px;
+    margin-bottom: 10px;
     text-transform: uppercase;
 }
 
 .hero-title {
-    font-family: 'Fraunces', serif;
-    color: #F7F3E8;
-    font-size: 42px;
-    font-weight: 600;
-    line-height: 1.08;
+    color: #FFFFFF;
+    font-size: 34px;
+    font-weight: 800;
+    line-height: 1.18;
     letter-spacing: -0.5px;
 }
 
+.hero-rule {
+    width: 46px;
+    height: 3px;
+    background: var(--gold-soft);
+    border-radius: 2px;
+    margin: 16px 0;
+}
+
 .hero-subtitle {
-    color: #B9C7D2;
+    color: #C9D6E2;
     font-size: 14px;
-    margin-top: 16px;
     max-width: 430px;
-    line-height: 1.7;
+    line-height: 1.65;
     font-weight: 400;
 }
 
@@ -241,63 +202,62 @@ code, .stCode, div[data-testid="stTextInput"] input, div[data-testid="stTextArea
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    color: var(--brass);
-    background: rgba(201,162,39,0.08);
-    border: 1px solid rgba(201,162,39,0.45);
-    border-radius: 3px;
+    color: var(--navy-deep);
+    background: var(--gold-soft);
+    border-radius: 4px;
     padding: 7px 14px;
-    margin-top: 20px;
+    margin-top: 18px;
     font-size: 10.5px;
-    font-weight: 700;
-    letter-spacing: 1.4px;
+    font-weight: 800;
+    letter-spacing: 1px;
 }
 
 .hero-visual {
     position: absolute;
-    right: 0px;
-    top: 0px;
-    width: 46%;
-    height: 100%;
+    right: 22px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 150px;
+    height: 150px;
     opacity: 0.9;
 }
 
 
 /* =====================================================
-   ÜST DURUM KARTLARI — "kayıt defteri" fişleri
+   ÜST DURUM KARTLARI
    ===================================================== */
 
 .stat-card {
     position: relative;
     overflow: hidden;
     background: var(--surface);
-    border: 1px solid var(--surface-border);
-    border-radius: 4px;
-    padding: 20px 22px;
-    min-height: 96px;
-    box-shadow: 0 4px 18px rgba(0,0,0,0.28);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    min-height: 92px;
+    box-shadow: 0 2px 8px rgba(15,42,68,0.04);
 }
 
 .stat-accent-blue, .stat-accent-green {
     position: absolute; top: 0; left: 0;
     width: 4px; height: 100%;
-    background: var(--steel);
+    background: var(--navy);
 }
-.stat-accent-green { background: var(--brass); }
+.stat-accent-green { background: var(--gold); }
 
-.stat-icon { font-size: 18px; margin-bottom: 6px; color: var(--brass); }
+.stat-icon { font-size: 17px; margin-bottom: 5px; color: var(--gold); }
 
 .stat-label {
     color: var(--ink-soft);
-    font-size: 10px; font-weight: 800;
+    font-size: 10px; font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1.4px;
+    letter-spacing: 1.2px;
 }
 
 .stat-value {
-    font-family: 'Fraunces', serif;
-    color: var(--parchment);
-    font-size: 23px; font-weight: 600;
-    margin-top: 5px;
+    color: var(--navy);
+    font-size: 21px; font-weight: 800;
+    margin-top: 4px;
 }
 
 
@@ -306,67 +266,86 @@ code, .stCode, div[data-testid="stTextInput"] input, div[data-testid="stTextArea
    ===================================================== */
 
 div[data-testid="stVerticalBlockBorderWrapper"] {
-    border-radius: 5px !important;
+    border-radius: 10px !important;
     background: var(--surface) !important;
-    border: 1px solid var(--surface-border) !important;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.30);
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 2px 10px rgba(15,42,68,0.05);
 }
 
 div[data-testid="stTextInput"] input {
-    min-height: 62px;
-    background: #0A1826;
-    border-radius: 3px;
-    border: 1.5px solid rgba(201,162,39,0.35);
+    min-height: 58px;
+    background: #FAFBFC;
+    border-radius: 6px;
+    border: 1.5px solid var(--border);
     text-align: center;
-    font-size: 22px; font-weight: 600;
-    letter-spacing: 2px;
+    font-size: 21px; font-weight: 600;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
-    color: var(--parchment);
+    color: var(--navy);
 }
 
 div[data-testid="stTextInput"] input:focus {
-    border-color: var(--brass);
-    box-shadow: 0 0 0 3px rgba(201,162,39,0.18);
+    border-color: var(--navy);
+    box-shadow: 0 0 0 3px rgba(15,42,68,0.10);
 }
 
 div[data-testid="stTextArea"] textarea {
-    background: #0A1826;
-    border-radius: 3px;
-    border: 1.5px solid rgba(201,162,39,0.35);
-    font-size: 15px; font-weight: 600;
-    letter-spacing: 1px;
+    background: #FAFBFC;
+    border-radius: 6px;
+    border: 1.5px solid var(--border);
+    font-size: 14.5px; font-weight: 600;
+    letter-spacing: 0.6px;
     text-transform: uppercase;
-    color: var(--parchment);
+    color: var(--navy);
 }
 
 div[data-baseweb="select"] > div {
-    min-height: 54px;
-    border-radius: 3px !important;
-    background-color: #0A1826;
-    border-color: rgba(201,162,39,0.35) !important;
-    color: var(--parchment) !important;
+    min-height: 52px;
+    border-radius: 6px !important;
+    background-color: #FAFBFC;
+    border-color: var(--border) !important;
 }
 
-div[data-baseweb="select"] span { color: var(--parchment) !important; }
-
 div.stButton > button {
-    min-height: 54px;
+    min-height: 52px;
     width: 100%;
-    border-radius: 3px;
-    border: 1px solid var(--brass);
-    background: linear-gradient(135deg, var(--brass-deep), var(--brass));
-    color: var(--navy-deep);
+    border-radius: 6px;
+    border: 1px solid var(--navy);
+    background: var(--navy);
+    color: #FFFFFF;
     font-family: 'Inter', sans-serif;
-    font-size: 14.5px; font-weight: 800;
-    letter-spacing: 1.6px;
+    font-size: 14px; font-weight: 700;
+    letter-spacing: 1px;
     text-transform: uppercase;
-    box-shadow: 0 8px 20px rgba(201,162,39,0.18);
+    box-shadow: 0 3px 10px rgba(15,42,68,0.14);
     transition: all 0.15s ease;
 }
 
 div.stButton > button:hover {
-    background: linear-gradient(135deg, var(--brass), #EBCF6E);
+    background: var(--navy-deep);
     transform: translateY(-1px);
+}
+
+/* İkincil butonlar (arama geçmişi chip'leri) */
+div.stButton > button[kind="secondary"] {
+    min-height: 30px;
+    width: auto;
+    padding: 4px 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: none;
+    border-radius: 30px;
+    background: #F0F3F6;
+    color: var(--navy);
+    box-shadow: none;
+    border: 1px solid var(--border);
+}
+
+div.stButton > button[kind="secondary"]:hover {
+    background: #E4EAF0;
+    border-color: var(--navy);
+    transform: none;
 }
 
 
@@ -379,15 +358,15 @@ div.stButton > button:hover {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 11.5px;
     font-weight: 600;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.3px;
     margin-top: -6px;
     margin-bottom: 12px;
     padding: 7px;
-    border-radius: 3px;
+    border-radius: 5px;
 }
 
-.format-ok { color: #6FE3A8; background: rgba(53,169,124,0.12); }
-.format-bad { color: #F0A0A0; background: rgba(194,69,69,0.10); }
+.format-ok { color: var(--verified); background: var(--verified-bg); }
+.format-bad { color: var(--alert); background: var(--alert-bg); }
 .format-empty { color: var(--ink-soft); background: transparent; }
 
 
@@ -397,31 +376,10 @@ div.stButton > button:hover {
 
 .history-label {
     color: var(--ink-soft);
-    font-size: 10px; font-weight: 800;
+    font-size: 10px; font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1.4px;
+    letter-spacing: 1.2px;
     margin-bottom: 8px;
-}
-
-div.stButton > button[kind="secondary"] {
-    min-height: 32px;
-    width: auto;
-    padding: 4px 13px;
-    font-size: 11.5px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    text-transform: none;
-    border-radius: 30px;
-    background: #0A1826;
-    color: var(--parchment);
-    box-shadow: none;
-    border: 1px solid rgba(201,162,39,0.30);
-}
-
-div.stButton > button[kind="secondary"]:hover {
-    background: rgba(201,162,39,0.12);
-    transform: none;
-    border-color: var(--brass);
 }
 
 
@@ -430,105 +388,73 @@ div.stButton > button[kind="secondary"]:hover {
    ===================================================== */
 
 .success-banner {
-    position: relative;
-    overflow: hidden;
-    background: var(--verified);
-    border-radius: 4px;
-    padding: 17px 22px;
-    color: white;
-    margin-top: 24px;
-    box-shadow: 0 10px 24px rgba(31,110,74,0.20);
+    background: var(--verified-bg);
+    border: 1px solid #BFE6CC;
+    border-radius: 8px;
+    padding: 15px 20px;
+    margin-top: 22px;
 }
 
-.success-title { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; }
-.success-subtitle { color: #D6EEE1; font-size: 12px; margin-top: 3px; }
+.success-title { color: var(--verified); font-size: 16px; font-weight: 800; }
+.success-subtitle { color: #3D7856; font-size: 12px; margin-top: 2px; }
 
 
 /* =====================================================
-   KONTEYNER SONUÇ KARTI — resmi manifesto fişi
+   KONTEYNER SONUÇ KARTI
    ===================================================== */
-
-@keyframes cardReveal {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-}
 
 .container-result {
     position: relative;
-    overflow: visible;
-    background: var(--navy);
-    background-image: radial-gradient(circle at 100% 0%, rgba(201,162,39,0.12), transparent 55%);
-    border-radius: 4px;
-    padding: 30px 30px 26px 30px;
-    margin-top: 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 26px 28px;
+    margin-top: 16px;
     margin-bottom: 4px;
-    box-shadow: 0 18px 38px rgba(11,31,48,0.22);
-    border-top: 3px dashed rgba(201,162,39,0.55);
-    animation: cardReveal 0.35s ease-out;
+    box-shadow: 0 4px 16px rgba(15,42,68,0.06);
 }
 
-.container-accent { width: 5px; height: 100%; position: absolute; left: 0; top: 0; }
+.container-accent { width: 5px; height: 100%; position: absolute; left: 0; top: 0; border-radius: 10px 0 0 10px; }
 
-.manifest-tag {
-    position: absolute;
-    top: -13px;
-    left: 30px;
-    background: var(--brass);
-    color: var(--navy-deep);
-    font-size: 9.5px;
-    font-weight: 800;
-    letter-spacing: 1.8px;
-    text-transform: uppercase;
-    padding: 4px 12px;
-    border-radius: 2px;
-}
-
-.stamp-badge {
+.status-pill {
     position: absolute;
     top: 22px;
-    right: 26px;
-    width: 82px;
-    height: 82px;
-    border-radius: 50%;
-    border: 2.5px double currentColor;
-    display: flex;
+    right: 24px;
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    text-align: center;
-    font-family: 'Fraunces', serif;
-    font-size: 10.5px;
-    font-weight: 700;
-    letter-spacing: 0.8px;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.6px;
     text-transform: uppercase;
-    line-height: 1.25;
-    transform: rotate(-11deg);
-    opacity: 0.92;
 }
 
-.stamp-verified { color: #6FE3A8; }
-.stamp-flagged { color: #F0A0A0; }
+.status-pill-ok { background: var(--verified-bg); color: var(--verified); border: 1px solid #BFE6CC; }
+.status-pill-bad { background: var(--alert-bg); color: var(--alert); border: 1px solid #F3C6C6; }
 
 .result-label {
-    color: #8DA3B5;
+    color: var(--ink-soft);
     font-size: 10px;
-    letter-spacing: 2px;
-    font-weight: 800;
+    letter-spacing: 1.6px;
+    font-weight: 700;
     text-transform: uppercase;
 }
 
 .result-number {
     font-family: 'IBM Plex Mono', monospace;
-    color: #F7F3E8;
-    font-size: 30px; font-weight: 700;
-    letter-spacing: 2px;
-    margin-top: 5px;
+    color: var(--navy);
+    font-size: 28px; font-weight: 700;
+    letter-spacing: 1.5px;
+    margin-top: 4px;
 }
 
-.result-divider { height: 1px; background: rgba(201,162,39,0.25); margin: 22px 60px 22px 0; }
+.result-divider { height: 1px; background: var(--border); margin: 20px 100px 20px 0; }
 
-.result-line { font-family: 'Fraunces', serif; color: #F7F3E8; font-size: 27px; font-weight: 600; margin-top: 4px; }
+.result-line { color: var(--navy); font-size: 23px; font-weight: 800; margin-top: 4px; }
 
-.copy-caption { font-size: 11px; color: var(--ink-soft); margin-top: 10px; margin-bottom: 16px; }
+.copy-caption { font-size: 11px; color: var(--ink-soft); margin-top: 10px; margin-bottom: 14px; }
 
 
 /* =====================================================
@@ -537,22 +463,21 @@ div.stButton > button[kind="secondary"]:hover {
 
 div[data-testid="stMetric"] {
     background: var(--surface);
-    border: 1px solid var(--surface-border);
-    border-radius: 4px;
-    padding: 16px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.22);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 8px rgba(15,42,68,0.04);
 }
 
 div[data-testid="stMetricLabel"] {
     color: var(--ink-soft);
-    font-size: 10px; font-weight: 800;
-    letter-spacing: 1px;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.8px;
     text-transform: uppercase;
 }
 
 div[data-testid="stMetricValue"] {
-    font-family: 'Fraunces', serif;
-    color: var(--parchment); font-size: 19px; font-weight: 600;
+    color: var(--navy); font-size: 18px; font-weight: 700;
 }
 
 
@@ -560,51 +485,42 @@ div[data-testid="stMetricValue"] {
    KRİTİK UYARI
    ===================================================== */
 
-@keyframes alertPulse {
-    0% { box-shadow: 0 0 0 0 rgba(156,43,43,0.35); }
-    70% { box-shadow: 0 0 0 13px rgba(156,43,43,0); }
-    100% { box-shadow: 0 0 0 0 rgba(156,43,43,0); }
-}
-
 .danger-card {
     position: relative;
-    overflow: visible;
-    background: linear-gradient(155deg, #5C1414, var(--alert));
-    border-radius: 4px;
-    padding: 30px;
-    margin-top: 24px;
-    color: white;
+    background: var(--alert-bg);
+    border: 1.5px solid #EAA3A3;
+    border-radius: 10px;
+    padding: 26px;
+    margin-top: 22px;
+    color: var(--alert);
     text-align: center;
-    animation: alertPulse 2.2s infinite, cardReveal 0.35s ease-out;
-    box-shadow: 0 18px 38px rgba(156,43,43,0.24);
-    border-top: 3px dashed rgba(255,255,255,0.35);
+    box-shadow: 0 4px 16px rgba(185,28,28,0.08);
 }
 
 .danger-symbol {
-    width: 66px; height: 66px;
-    margin: 0 auto 14px auto;
+    width: 58px; height: 58px;
+    margin: 0 auto 12px auto;
     border-radius: 50%;
-    background: rgba(255,255,255,0.12);
-    border: 2px solid rgba(255,255,255,0.4);
+    background: #FFFFFF;
+    border: 2px solid var(--alert);
     display: flex; align-items: center; justify-content: center;
-    font-family: 'Fraunces', serif;
-    font-size: 36px; font-weight: 700;
+    font-size: 30px; font-weight: 800;
+    color: var(--alert);
 }
 
-.danger-title { font-family: 'Fraunces', serif; font-size: 27px; font-weight: 700; letter-spacing: 0.2px; }
-.danger-container { font-family: 'IBM Plex Mono', monospace; font-size: 24px; font-weight: 700; margin-top: 15px; letter-spacing: 2px; }
-.danger-info { color: #FBDADA; font-size: 12.5px; margin-top: 15px; letter-spacing: 0.6px; }
-.danger-line { font-family: 'Fraunces', serif; color: white; font-size: 23px; font-weight: 700; margin-top: 4px; }
+.danger-title { font-size: 22px; font-weight: 800; letter-spacing: 0.2px; color: var(--alert); }
+.danger-container { font-family: 'IBM Plex Mono', monospace; font-size: 20px; font-weight: 700; margin-top: 14px; letter-spacing: 1.5px; color: var(--navy); }
+.danger-info { color: #8A3E3E; font-size: 12px; margin-top: 14px; letter-spacing: 0.4px; }
+.danger-line { color: var(--alert); font-size: 19px; font-weight: 800; margin-top: 4px; }
 
 .danger-stop {
-    margin-top: 22px;
-    background: white;
-    color: var(--alert);
-    padding: 13px;
-    border-radius: 3px;
-    font-family: 'Inter', sans-serif;
-    font-size: 15px; font-weight: 800;
-    letter-spacing: 1.4px;
+    margin-top: 20px;
+    background: var(--alert);
+    color: #FFFFFF;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 14px; font-weight: 800;
+    letter-spacing: 1.2px;
     text-transform: uppercase;
 }
 
@@ -614,29 +530,28 @@ div[data-testid="stMetricValue"] {
    ===================================================== */
 
 .not-found {
-    background: linear-gradient(155deg, #4A1010, #7A1E1E);
-    border-radius: 4px;
-    padding: 30px;
+    background: var(--alert-bg);
+    border: 1.5px solid #EAA3A3;
+    border-radius: 10px;
+    padding: 26px;
     text-align: center;
-    color: white;
-    margin-top: 24px;
-    box-shadow: 0 16px 34px rgba(122,30,30,0.20);
-    border-top: 3px dashed rgba(255,255,255,0.3);
-    animation: cardReveal 0.35s ease-out;
+    color: var(--alert);
+    margin-top: 22px;
+    box-shadow: 0 4px 16px rgba(185,28,28,0.08);
 }
 
-.not-found-title { font-family: 'Fraunces', serif; font-size: 25px; font-weight: 700; }
-.not-found-number { font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 700; margin-top: 12px; letter-spacing: 2px; }
+.not-found-title { font-size: 21px; font-weight: 800; color: var(--alert); }
+.not-found-number { font-family: 'IBM Plex Mono', monospace; font-size: 19px; font-weight: 700; margin-top: 10px; letter-spacing: 1.5px; color: var(--navy); }
 
 .not-found-stop {
-    background: white;
-    color: #7A1E1E;
-    border-radius: 3px;
-    padding: 12px;
-    font-size: 15px; font-weight: 800;
-    letter-spacing: 1.2px;
+    background: var(--alert);
+    color: #FFFFFF;
+    border-radius: 6px;
+    padding: 11px;
+    font-size: 13.5px; font-weight: 800;
+    letter-spacing: 1px;
     text-transform: uppercase;
-    margin-top: 20px;
+    margin-top: 18px;
 }
 
 
@@ -648,31 +563,32 @@ div[data-testid="stMetricValue"] {
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 13px 18px;
-    border-radius: 3px;
-    margin-bottom: 7px;
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin-bottom: 6px;
     font-weight: 700;
     background: var(--surface);
+    border: 1px solid var(--border);
 }
 
-.batch-row-ok { border-left: 4px solid var(--verified); color: #6FE3A8; }
-.batch-row-bad { border-left: 4px solid var(--alert); color: #F0A0A0; }
-.batch-row-warn { border-left: 4px solid var(--brass); color: #E4C863; }
+.batch-row-ok { border-left: 4px solid var(--verified); color: var(--verified); }
+.batch-row-bad { border-left: 4px solid var(--alert); color: var(--alert); }
+.batch-row-warn { border-left: 4px solid var(--gold); color: var(--warn); }
 
-.batch-icon { font-size: 17px; min-width: 20px; text-align: center; }
-.batch-number { font-family: 'IBM Plex Mono', monospace; font-size: 14.5px; letter-spacing: 1px; min-width: 150px; color: var(--parchment); }
-.batch-detail { font-size: 12px; font-weight: 600; opacity: 0.85; flex: 1; }
+.batch-icon { font-size: 16px; min-width: 18px; text-align: center; }
+.batch-number { font-family: 'IBM Plex Mono', monospace; font-size: 14px; letter-spacing: 0.6px; min-width: 148px; color: var(--navy); }
+.batch-detail { font-size: 12px; font-weight: 600; opacity: 0.85; flex: 1; color: var(--ink-soft); }
 
 .batch-summary { display: flex; gap: 10px; margin-bottom: 14px; }
 
 .batch-pill {
     flex: 1;
     text-align: center;
-    padding: 12px;
-    border-radius: 3px;
+    padding: 11px;
+    border-radius: 6px;
     font-size: 12px;
     font-weight: 800;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.3px;
 }
 
 
@@ -682,23 +598,11 @@ div[data-testid="stMetricValue"] {
 
 .app-footer {
     text-align: center;
-    color: #4A6478;
+    color: #9AA6B0;
     font-size: 10px;
-    letter-spacing: 1.4px;
+    letter-spacing: 1.2px;
     text-transform: uppercase;
-    margin-top: 44px;
-}
-
-
-/* =====================================================
-   HAREKET AZALTMA TERCİHİ
-   ===================================================== */
-
-@media (prefers-reduced-motion: reduce) {
-    .hero-content, .container-result, .danger-card, .not-found {
-        animation: none !important;
-    }
-    .danger-card { animation: none !important; box-shadow: 0 18px 38px rgba(156,43,43,0.24) !important; }
+    margin-top: 40px;
 }
 
 
@@ -708,32 +612,35 @@ div[data-testid="stMetricValue"] {
 
 @media (max-width: 650px) {
     .block-container { padding-left: 13px; padding-right: 13px; }
-    .hero { min-height: 300px; padding: 28px 24px; }
+    .hero { padding: 26px 24px; }
     .hero-content { width: 100%; }
-    .hero-title { font-size: 32px; }
-    .hero-visual { width: 150px; height: 150px; top: auto; bottom: 0; right: 0; opacity: 0.35; }
-    .result-number { font-size: 25px; }
-    .result-line { font-size: 22px; }
-    .danger-title { font-size: 23px; }
-    .stamp-badge { width: 64px; height: 64px; font-size: 8.5px; top: 16px; right: 16px; }
+    .hero-title { font-size: 27px; }
+    .hero-visual { display: none; }
+    .result-number { font-size: 23px; }
+    .result-line { font-size: 19px; }
+    .danger-title { font-size: 19px; }
+    .status-pill { position: static; display: inline-flex; margin-bottom: 12px; }
     .batch-row { flex-wrap: wrap; }
 }
 
 </style>
 """
 
-# Yüksek kontrast modu (erişilebilirlik) — palet dışına çıkan, saf siyah/beyaz mod
+# Yüksek kontrast modu (erişilebilirlik)
 HIGH_CONTRAST_CSS = """
 <style>
 
-.stApp { background: #ffffff !important; background-image: none !important; }
+.stApp { background: #ffffff !important; }
 
-.stat-card, div[data-testid="stVerticalBlockBorderWrapper"], div[data-testid="stMetric"] {
+.stat-card, div[data-testid="stVerticalBlockBorderWrapper"], div[data-testid="stMetric"],
+.container-result, .batch-row {
     border: 2px solid #000000 !important;
     box-shadow: none !important;
 }
 
-.stat-value, .result-label, div[data-testid="stMetricValue"], h1, h2, h3 { color: #000000 !important; }
+.stat-value, .result-label, .result-number, .result-line, div[data-testid="stMetricValue"], h1, h2, h3 {
+    color: #000000 !important;
+}
 
 div[data-testid="stTextInput"] input, div[data-testid="stTextArea"] textarea {
     border: 2px solid #000000 !important;
@@ -748,16 +655,17 @@ div.stButton > button {
     box-shadow: none !important;
 }
 
-.container-result, .hero { background: #000000 !important; background-image: none !important; }
-.danger-card { background: #b30000 !important; animation: none !important; }
-.not-found { background: #7a0000 !important; }
-.success-banner { background: #005c33 !important; }
+.hero { background: #000000 !important; }
 
-.batch-row-ok { background: #e6f7ee !important; border-left: 4px solid #0a7a4d !important; }
-.batch-row-bad { background: #fbe6e6 !important; border-left: 4px solid #a91616 !important; }
-.batch-row-warn { background: #fff6df !important; border-left: 4px solid #8a6300 !important; }
+.danger-card, .not-found { background: #ffffff !important; border: 2px solid #B91C1C !important; }
+.danger-title, .not-found-title, .danger-line { color: #B91C1C !important; }
 
-.stamp-badge { color: #ffffff !important; }
+.success-banner { background: #ffffff !important; border: 2px solid #157347 !important; }
+.success-title { color: #157347 !important; }
+
+.batch-row-ok { background: #ffffff !important; border: 2px solid #157347 !important; }
+.batch-row-bad { background: #ffffff !important; border: 2px solid #B91C1C !important; }
+.batch-row-warn { background: #ffffff !important; border: 2px solid #92660A !important; }
 
 </style>
 """
@@ -878,7 +786,7 @@ with toolbar_col:
 
 
 # =========================================================
-# HERO — pusula gülü ile "kaptan köşkü" paneli
+# HERO
 # =========================================================
 
 st.html("""
@@ -888,10 +796,9 @@ st.html("""
 
         <div class="hero-brand">ALPORT BANJUL &nbsp;·&nbsp; LİMAN OPERASYONLARI</div>
 
-        <div class="hero-title">
-            Konteyner<br>
-            Kayıt Defteri
-        </div>
+        <div class="hero-title">Konteyner Takip ve Doğrulama Sistemi</div>
+
+        <div class="hero-rule"></div>
 
         <div class="hero-subtitle">
             Gemi yüklemesinden önceki son kontrol noktası:
@@ -899,31 +806,19 @@ st.html("""
             tek ekranda doğrulayın.
         </div>
 
-        <div class="hero-badge">⚓ &nbsp;OPERASYONEL DOĞRULAMA SİSTEMİ</div>
+        <div class="hero-badge">⚓ &nbsp;OPERASYONEL DOĞRULAMA</div>
 
     </div>
 
-    <svg class="hero-visual" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <circle cx="230" cy="200" r="150" fill="none" stroke="#C9A227" stroke-width="1" opacity="0.35"/>
-        <circle cx="230" cy="200" r="112" fill="none" stroke="#C9A227" stroke-width="1" opacity="0.28"/>
-        <circle cx="230" cy="200" r="4" fill="#C9A227" opacity="0.85"/>
-
-        <g stroke="#C9A227" stroke-width="1" opacity="0.55">
-            <line x1="230" y1="30" x2="230" y2="370" />
-            <line x1="60" y1="200" x2="400" y2="200" />
-            <line x1="123" y1="93" x2="337" y2="307" opacity="0.35"/>
-            <line x1="337" y1="93" x2="123" y2="307" opacity="0.35"/>
-        </g>
-
-        <path d="M230 48 L242 190 L230 210 L218 190 Z" fill="#C9A227" opacity="0.9"/>
-        <path d="M230 352 L242 210 L230 190 L218 210 Z" fill="#E4D9B0" opacity="0.55"/>
-        <path d="M78 200 L220 188 L240 200 L220 212 Z" fill="#E4D9B0" opacity="0.45"/>
-        <path d="M382 200 L240 188 L220 200 L240 212 Z" fill="#E4D9B0" opacity="0.45"/>
-
-        <text x="230" y="24" text-anchor="middle" fill="#C9A227" font-family="Fraunces, serif" font-size="15" opacity="0.8">K</text>
-        <text x="230" y="392" text-anchor="middle" fill="#C9A227" font-family="Fraunces, serif" font-size="15" opacity="0.8">G</text>
-        <text x="42" y="205" text-anchor="middle" fill="#C9A227" font-family="Fraunces, serif" font-size="15" opacity="0.8">B</text>
-        <text x="418" y="205" text-anchor="middle" fill="#C9A227" font-family="Fraunces, serif" font-size="15" opacity="0.8">D</text>
+    <svg class="hero-visual" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="100" cy="100" r="88" fill="none" stroke="#D4A72C" stroke-width="1.2" opacity="0.35"/>
+        <path d="M100 40 C100 40 130 70 130 105 C130 128 117 145 100 145 C83 145 70 128 70 105 C70 70 100 40 100 40 Z"
+              fill="none" stroke="#D4A72C" stroke-width="2.2" opacity="0.75"/>
+        <line x1="100" y1="40" x2="100" y2="18" stroke="#D4A72C" stroke-width="2.2" opacity="0.75"/>
+        <line x1="86" y1="24" x2="114" y2="24" stroke="#D4A72C" stroke-width="2.2" opacity="0.75"/>
+        <line x1="70" y1="105" x2="45" y2="118" stroke="#D4A72C" stroke-width="2" opacity="0.6"/>
+        <line x1="130" y1="105" x2="155" y2="118" stroke="#D4A72C" stroke-width="2" opacity="0.6"/>
+        <circle cx="100" cy="98" r="10" fill="none" stroke="#D4A72C" stroke-width="2" opacity="0.75"/>
     </svg>
 
 </div>
@@ -939,7 +834,7 @@ if not os.path.exists(EXCEL_FILE):
     st.stop()
 
 try:
-    with st.spinner("Kayıt defteri yükleniyor..."):
+    with st.spinner("Veritabanı yükleniyor..."):
         modified_time = os.path.getmtime(EXCEL_FILE)
         df = load_database(EXCEL_FILE, modified_time)
 except Exception:
@@ -1069,10 +964,10 @@ with tab_single:
         if status == "invalid":
             st.html(f"""
                 <div class="not-found" role="alert">
-                    <div style="font-size:42px; margin-bottom:8px;">⚠</div>
+                    <div style="font-size:38px; margin-bottom:8px;">⚠</div>
                     <div class="not-found-title">GEÇERSİZ FORMAT</div>
                     <div class="not-found-number">{safe(normalized)}</div>
-                    <div style="color:#ffdede; margin-top:12px; font-size:13px;">
+                    <div style="color:#8A3E3E; margin-top:10px; font-size:13px;">
                         Konteyner numarası standart formata (4 harf + 7 rakam) uymuyor.
                         Lütfen tekrar kontrol edin.
                     </div>
@@ -1082,10 +977,10 @@ with tab_single:
         elif status == "not_found":
             st.html(f"""
                 <div class="not-found" role="alert">
-                    <div style="font-size:42px; margin-bottom:8px;">ⓧ</div>
+                    <div style="font-size:38px; margin-bottom:8px;">ⓧ</div>
                     <div class="not-found-title">KONTEYNER BULUNAMADI</div>
                     <div class="not-found-number">{safe(normalized)}</div>
-                    <div style="color:#ffdede; margin-top:12px; font-size:13px;">
+                    <div style="color:#8A3E3E; margin-top:10px; font-size:13px;">
                         Bu konteyner güncel veritabanında bulunmuyor.
                     </div>
                     <div class="not-found-stop">YÜKLEME YAPMAYIN</div>
@@ -1110,7 +1005,7 @@ with tab_single:
             imo_class = clean_value(record, "IMO CLS")
             discharge_date = clean_value(record, "DISCHARGE DATE")
 
-            line_color = LINE_COLORS.get(shipping_line, "#B08D3E")
+            line_color = LINE_COLORS.get(shipping_line, "#A6821E")
 
             wrong_line = (
                 selected_line != "Hat seçilmedi"
@@ -1120,7 +1015,6 @@ with tab_single:
             if wrong_line:
                 st.html(f"""
                     <div class="danger-card" role="alert">
-                        <div class="stamp-badge stamp-flagged">RED<br>FLAG</div>
                         <div class="danger-symbol">!</div>
                         <div class="danger-title">YANLIŞ SHIPPING LINE</div>
                         <div class="danger-container">{safe(container)}</div>
@@ -1150,8 +1044,7 @@ with tab_single:
 
                 st.html(f"""
                     <div class="container-result">
-                        <div class="manifest-tag">Manifesto Kaydı</div>
-                        <div class="stamp-badge stamp-verified">DOĞRU-<br>LANDI</div>
+                        <div class="status-pill status-pill-ok">✓ Doğrulandı</div>
                         <div class="container-accent" style="background:{line_color};"></div>
                         <div class="result-label">KONTEYNER NUMARASI</div>
                         <div class="result-number">{safe(container)}</div>
@@ -1282,13 +1175,13 @@ with tab_batch:
 
         st.html(f"""
             <div class="batch-summary">
-                <div class="batch-pill" style="background:rgba(53,169,124,0.14); color:#6FE3A8;">
+                <div class="batch-pill" style="background:#E9F7EF; color:#157347;">
                     ✓ {ok_count} Uygun
                 </div>
-                <div class="batch-pill" style="background:rgba(194,69,69,0.12); color:#F0A0A0;">
+                <div class="batch-pill" style="background:#FDECEC; color:#B91C1C;">
                     ✗ {bad_count} Sorunlu
                 </div>
-                <div class="batch-pill" style="background:rgba(201,162,39,0.10); color:#D9B84A;">
+                <div class="batch-pill" style="background:#EEF2F6; color:#0F2A44;">
                     Toplam {len(rows)}
                 </div>
             </div>
@@ -1321,6 +1214,6 @@ with tab_batch:
 
 st.html("""
 <div class="app-footer">
-    ⚓ ALPORT BANJUL &nbsp;·&nbsp; KONTEYNER KAYIT DEFTERİ &nbsp;·&nbsp; OPERASYON
+    ⚓ ALPORT BANJUL &nbsp;·&nbsp; KONTEYNER TAKİP SİSTEMİ &nbsp;·&nbsp; OPERASYON
 </div>
 """)
