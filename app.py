@@ -13,7 +13,7 @@ import streamlit as st
 
 st.set_page_config(
     page_title="ALPORT Konteyner Takip",
-    page_icon="🚢",
+    page_icon="⚓",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
@@ -48,16 +48,16 @@ LINE_MAP = {
 }
 
 
-# Her hat için görsel vurgu rengi
+# Her hat için görsel vurgu rengi (marka rengi, brass zeminle uyumlu tutuldu)
 LINE_COLORS = {
-    "MAERSK": "#42B0D5",
-    "CMA CGM": "#E85D2A",
-    "MSC": "#F5B800",
-    "HAPAG-LLOYD": "#F26B21",
-    "ONE": "#D6007F",
-    "COSCO": "#1A5CA8",
-    "PIL": "#E52329",
-    "OBT": "#16A085"
+    "MAERSK": "#1E7FA6",
+    "CMA CGM": "#C1501F",
+    "MSC": "#B08D3E",
+    "HAPAG-LLOYD": "#C1501F",
+    "ONE": "#9C2B5E",
+    "COSCO": "#1E4E8C",
+    "PIL": "#9C2B2B",
+    "OBT": "#1F6E4A"
 }
 
 
@@ -76,26 +76,67 @@ if "container_query" not in st.session_state:
 
 
 # =========================================================
-# CSS
+# CSS — "LİMAN KAYIT DEFTERİ" KİMLİĞİ
+# Navy + pirinç (brass) + parşömen zemin, deniz haritası dokusu
 # =========================================================
 
 BASE_CSS = """
 <style>
 
-/* STREAMLIT MENÜLERİNİ GİZLE */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600;700&display=swap');
+
+:root {
+    --navy: #0B1F30;
+    --navy-deep: #071624;
+    --steel: #163A52;
+    --brass: #C9A227;
+    --brass-deep: #8C6D2F;
+    --parchment: #F6F3EA;
+    --parchment-line: #E4DDC8;
+    --ink: #1B2530;
+    --ink-soft: #5B6B78;
+    --alert: #9C2B2B;
+    --verified: #1F6E4A;
+}
 
 #MainMenu { visibility: hidden; }
 footer { visibility: hidden; }
 header { visibility: hidden; }
 
 
-/* SAYFA */
+/* =====================================================
+   TEMEL TİPOGRAFİ
+   ===================================================== */
+
+html, body, [class*="css"] {
+    font-family: 'Inter', sans-serif;
+    color: var(--ink);
+}
+
+h1, h2, h3, .stMarkdown h3 {
+    font-family: 'Fraunces', serif !important;
+    font-weight: 600 !important;
+    color: var(--navy) !important;
+    letter-spacing: -0.3px;
+}
+
+code, .stCode, div[data-testid="stTextInput"] input, div[data-testid="stTextArea"] textarea {
+    font-family: 'IBM Plex Mono', monospace !important;
+}
+
+
+/* =====================================================
+   SAYFA ZEMİNİ — deniz haritası kağıdı dokusu
+   ===================================================== */
 
 .stApp {
-    background:
-        radial-gradient(circle at 0% 0%, rgba(0, 159, 227, 0.12), transparent 32%),
-        radial-gradient(circle at 100% 25%, rgba(13, 148, 136, 0.08), transparent 28%),
-        linear-gradient(180deg, #f7fafc 0%, #edf3f7 100%);
+    background-color: var(--parchment);
+    background-image:
+        linear-gradient(var(--parchment-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--parchment-line) 1px, transparent 1px),
+        radial-gradient(circle at 8% 0%, rgba(201,162,39,0.10), transparent 30%);
+    background-size: 42px 42px, 42px 42px, 100% 100%;
+    background-attachment: fixed;
 }
 
 .block-container {
@@ -106,132 +147,150 @@ header { visibility: hidden; }
 
 
 /* =====================================================
-   ÜST ARAÇ ÇUBUĞU (kontrast anahtarı)
+   ÜST ARAÇ ÇUBUĞU
    ===================================================== */
 
-.top-toolbar {
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: 6px;
+.top-toolbar { display: flex; justify-content: flex-end; margin-bottom: 6px; }
+
+.eyebrow {
+    font-family: 'Inter', sans-serif;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 2.6px;
+    text-transform: uppercase;
+    color: var(--brass-deep);
 }
 
 
 /* =====================================================
-   HERO
+   HERO — "kaptan köşkü" paneli
    ===================================================== */
+
+@keyframes heroFadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
 .hero {
     position: relative;
     overflow: hidden;
-    min-height: 260px;
-    background: linear-gradient(125deg, #061827 0%, #0a3555 50%, #007c91 100%);
-    border-radius: 26px;
-    padding: 35px 38px;
+    min-height: 275px;
+    background:
+        radial-gradient(circle at 88% 15%, rgba(201,162,39,0.16), transparent 45%),
+        linear-gradient(155deg, var(--navy-deep) 0%, var(--navy) 55%, #0E2A40 100%);
+    border-radius: 6px;
+    padding: 40px 42px;
     margin-bottom: 24px;
-    box-shadow: 0 22px 55px rgba(8, 35, 55, 0.22);
-    border: 1px solid rgba(255,255,255,0.10);
+    box-shadow: 0 24px 55px rgba(7, 22, 36, 0.35);
+    border: 1px solid rgba(201,162,39,0.35);
 }
 
-.hero-glow-one {
+.hero::before,
+.hero::after {
+    content: "";
     position: absolute;
-    width: 280px; height: 280px;
-    border-radius: 50%;
-    background: rgba(49, 190, 220, 0.18);
-    right: -90px; top: -110px;
-    filter: blur(2px);
+    left: 18px; right: 18px;
+    height: 1px;
+    background: rgba(201,162,39,0.30);
 }
+.hero::before { top: 12px; }
+.hero::after { bottom: 12px; }
 
-.hero-glow-two {
-    position: absolute;
-    width: 180px; height: 180px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.05);
-    right: 140px; bottom: -100px;
+.hero-content {
+    position: relative;
+    z-index: 3;
+    width: 58%;
+    animation: heroFadeIn 0.6s ease-out;
 }
-
-.hero-content { position: relative; z-index: 3; width: 55%; }
 
 .hero-brand {
-    color: #8ed8e4;
-    font-size: 12px; font-weight: 800;
+    color: var(--brass);
+    font-size: 11.5px;
+    font-weight: 800;
     letter-spacing: 4px;
-    margin-bottom: 9px;
+    margin-bottom: 12px;
+    text-transform: uppercase;
 }
 
 .hero-title {
-    color: white;
-    font-size: 40px; font-weight: 900;
-    line-height: 1.05;
-    letter-spacing: -1px;
+    font-family: 'Fraunces', serif;
+    color: #F7F3E8;
+    font-size: 42px;
+    font-weight: 600;
+    line-height: 1.08;
+    letter-spacing: -0.5px;
 }
 
 .hero-subtitle {
-    color: #c7dce7;
+    color: #B9C7D2;
     font-size: 14px;
-    margin-top: 15px;
-    max-width: 440px;
-    line-height: 1.65;
+    margin-top: 16px;
+    max-width: 430px;
+    line-height: 1.7;
+    font-weight: 400;
 }
 
 .hero-badge {
-    display: inline-block;
-    color: #dff8ff;
-    background: rgba(255,255,255,0.10);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 30px;
-    padding: 7px 13px;
-    margin-top: 18px;
-    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--brass);
+    background: rgba(201,162,39,0.08);
+    border: 1px solid rgba(201,162,39,0.45);
+    border-radius: 3px;
+    padding: 7px 14px;
+    margin-top: 20px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 1.4px;
 }
 
 .hero-visual {
     position: absolute;
-    right: 25px; bottom: 18px;
-    width: 38%; max-width: 320px;
-    opacity: 0.96;
+    right: 0px;
+    top: 0px;
+    width: 46%;
+    height: 100%;
+    opacity: 0.9;
 }
 
 
 /* =====================================================
-   ÜST DURUM KARTLARI
+   ÜST DURUM KARTLARI — "kayıt defteri" fişleri
    ===================================================== */
 
 .stat-card {
     position: relative;
     overflow: hidden;
-    background: rgba(255,255,255,0.94);
-    border: 1px solid #dbe5ec;
-    border-radius: 17px;
+    background: #FFFFFF;
+    border: 1px solid #DED4B8;
+    border-radius: 4px;
     padding: 20px 22px;
     min-height: 96px;
-    box-shadow: 0 7px 22px rgba(15,23,42,0.05);
+    box-shadow: 0 4px 14px rgba(11,31,48,0.05);
 }
 
-.stat-accent-blue {
+.stat-accent-blue, .stat-accent-green {
     position: absolute; top: 0; left: 0;
-    width: 5px; height: 100%;
-    background: linear-gradient(#00a1d5, #127ca5);
+    width: 4px; height: 100%;
+    background: var(--navy);
 }
+.stat-accent-green { background: var(--brass); }
 
-.stat-accent-green {
-    position: absolute; top: 0; left: 0;
-    width: 5px; height: 100%;
-    background: linear-gradient(#18a57b, #087b65);
-}
-
-.stat-icon { font-size: 20px; margin-bottom: 5px; }
+.stat-icon { font-size: 18px; margin-bottom: 6px; color: var(--brass-deep); }
 
 .stat-label {
-    color: #718190;
+    color: var(--ink-soft);
     font-size: 10px; font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 1.3px;
+    letter-spacing: 1.4px;
 }
 
 .stat-value {
-    color: #102b3d;
-    font-size: 22px; font-weight: 900;
-    margin-top: 4px;
+    font-family: 'Fraunces', serif;
+    color: var(--navy);
+    font-size: 23px; font-weight: 600;
+    margin-top: 5px;
 }
 
 
@@ -240,175 +299,205 @@ header { visibility: hidden; }
    ===================================================== */
 
 div[data-testid="stVerticalBlockBorderWrapper"] {
-    border-radius: 20px !important;
-    background: rgba(255,255,255,0.92) !important;
-    border: 1px solid #d8e2e9 !important;
-    box-shadow: 0 10px 32px rgba(15,23,42,0.06);
+    border-radius: 5px !important;
+    background: #FFFFFF !important;
+    border: 1px solid #DED4B8 !important;
+    box-shadow: 0 8px 26px rgba(11,31,48,0.05);
 }
 
 div[data-testid="stTextInput"] input {
-    min-height: 64px;
-    background: #ffffff;
-    border-radius: 14px;
-    border: 1px solid #cbd8e1;
+    min-height: 62px;
+    background: #FCFAF3;
+    border-radius: 3px;
+    border: 1.5px solid #D3C9A8;
     text-align: center;
-    font-size: 24px; font-weight: 900;
+    font-size: 22px; font-weight: 600;
     letter-spacing: 2px;
     text-transform: uppercase;
+    color: var(--navy);
 }
 
 div[data-testid="stTextInput"] input:focus {
-    border-color: #0d80a5;
-    box-shadow: 0 0 0 3px rgba(13,128,165,0.10);
+    border-color: var(--brass);
+    box-shadow: 0 0 0 3px rgba(201,162,39,0.16);
 }
 
 div[data-testid="stTextArea"] textarea {
-    background: #ffffff;
-    border-radius: 14px;
-    border: 1px solid #cbd8e1;
-    font-size: 16px; font-weight: 700;
+    background: #FCFAF3;
+    border-radius: 3px;
+    border: 1.5px solid #D3C9A8;
+    font-size: 15px; font-weight: 600;
     letter-spacing: 1px;
     text-transform: uppercase;
-    font-family: "Courier New", monospace;
+    color: var(--navy);
 }
 
 div[data-baseweb="select"] > div {
-    min-height: 56px;
-    border-radius: 13px !important;
-    background-color: white;
+    min-height: 54px;
+    border-radius: 3px !important;
+    background-color: #FCFAF3;
+    border-color: #D3C9A8 !important;
 }
 
 div.stButton > button {
-    min-height: 56px;
+    min-height: 54px;
     width: 100%;
-    border-radius: 13px;
-    border: none;
-    background: linear-gradient(110deg, #073b5d, #007f9a);
-    color: white;
-    font-size: 16px; font-weight: 800;
-    letter-spacing: 0.5px;
-    box-shadow: 0 8px 18px rgba(0, 105, 140, 0.16);
+    border-radius: 3px;
+    border: 1px solid var(--navy);
+    background: var(--navy);
+    color: var(--brass);
+    font-family: 'Inter', sans-serif;
+    font-size: 14.5px; font-weight: 800;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    box-shadow: 0 8px 18px rgba(11,31,48,0.18);
+    transition: all 0.15s ease;
 }
 
 div.stButton > button:hover {
-    background: linear-gradient(110deg, #052d49, #006d83);
+    background: var(--navy-deep);
+    border-color: var(--brass);
     transform: translateY(-1px);
 }
 
 
 /* =====================================================
-   FORMAT İPUCU (canlı doğrulama)
+   FORMAT İPUCU
    ===================================================== */
 
 .format-hint {
     text-align: center;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
     margin-top: -6px;
-    margin-bottom: 10px;
-    padding: 6px;
-    border-radius: 8px;
+    margin-bottom: 12px;
+    padding: 7px;
+    border-radius: 3px;
 }
 
-.format-ok {
-    color: #0a7a4d;
-    background: rgba(16,165,103,0.10);
-}
-
-.format-bad {
-    color: #a91616;
-    background: rgba(200,30,30,0.08);
-}
-
-.format-empty {
-    color: #8a99a6;
-    background: transparent;
-}
+.format-ok { color: var(--verified); background: rgba(31,110,74,0.08); }
+.format-bad { color: var(--alert); background: rgba(156,43,43,0.06); }
+.format-empty { color: var(--ink-soft); background: transparent; }
 
 
 /* =====================================================
-   ARAMA GEÇMİŞİ (chip'ler)
+   ARAMA GEÇMİŞİ
    ===================================================== */
 
 .history-label {
-    color: #718190;
+    color: var(--ink-soft);
     font-size: 10px; font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 6px;
+    letter-spacing: 1.4px;
+    margin-bottom: 8px;
 }
 
-div[data-testid="column"] div.stButton > button.history-chip,
-.history-row div.stButton > button {
-    min-height: 34px;
+.history-row div.stButton > button,
+div[data-testid="column"] div.stButton > button.history-chip {
+    min-height: 32px;
     width: auto;
-    padding: 4px 12px;
-    font-size: 12px;
-    font-weight: 800;
+    padding: 4px 13px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: none;
     border-radius: 30px;
-    background: #eef4f8;
-    color: #10425c;
+    background: #FCFAF3;
+    color: var(--navy);
     box-shadow: none;
-    border: 1px solid #d3e2ea;
+    border: 1px solid #D3C9A8;
 }
 
-.history-row div.stButton > button:hover {
-    background: #dcebf3;
-    transform: none;
-}
-
-.history-chip-ok div.stButton > button {
-    border-color: #b7e6d2;
-    background: #eafbf3;
-    color: #0a7a4d;
-}
-
-.history-chip-bad div.stButton > button {
-    border-color: #f3c4c4;
-    background: #fdeeee;
-    color: #a91616;
-}
+.history-row div.stButton > button:hover { background: #F1EAD2; transform: none; }
 
 
 /* =====================================================
-   DOĞRULANDI
+   DOĞRULANDI BANNER
    ===================================================== */
 
 .success-banner {
     position: relative;
     overflow: hidden;
-    background: linear-gradient(115deg, #08794f, #14a570);
-    border-radius: 17px;
-    padding: 18px 22px;
+    background: var(--verified);
+    border-radius: 4px;
+    padding: 17px 22px;
     color: white;
     margin-top: 24px;
-    box-shadow: 0 12px 28px rgba(16, 153, 103, 0.20);
+    box-shadow: 0 10px 24px rgba(31,110,74,0.20);
 }
 
-.success-title { font-size: 19px; font-weight: 900; }
-.success-subtitle { color: #d9fff0; font-size: 12px; margin-top: 3px; }
+.success-title { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; }
+.success-subtitle { color: #D6EEE1; font-size: 12px; margin-top: 3px; }
 
 
 /* =====================================================
-   KONTEYNER SONUÇ KARTI
+   KONTEYNER SONUÇ KARTI — resmi manifesto fişi
    ===================================================== */
+
+@keyframes cardReveal {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
 .container-result {
     position: relative;
-    overflow: hidden;
-    background: linear-gradient(135deg, #071b2a, #103d5a);
-    border-radius: 21px;
-    padding: 28px;
-    margin-top: 16px;
+    overflow: visible;
+    background: var(--navy);
+    background-image: radial-gradient(circle at 100% 0%, rgba(201,162,39,0.12), transparent 55%);
+    border-radius: 4px;
+    padding: 30px 30px 26px 30px;
+    margin-top: 18px;
     margin-bottom: 4px;
-    box-shadow: 0 15px 35px rgba(15,42,65,0.17);
+    box-shadow: 0 18px 38px rgba(11,31,48,0.22);
+    border-top: 3px dashed rgba(201,162,39,0.55);
+    animation: cardReveal 0.35s ease-out;
 }
 
-.container-accent { width: 7px; height: 100%; position: absolute; left: 0; top: 0; }
+.container-accent { width: 5px; height: 100%; position: absolute; left: 0; top: 0; }
+
+.manifest-tag {
+    position: absolute;
+    top: -13px;
+    left: 30px;
+    background: var(--brass);
+    color: var(--navy-deep);
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 2px;
+}
+
+.stamp-badge {
+    position: absolute;
+    top: 22px;
+    right: 26px;
+    width: 82px;
+    height: 82px;
+    border-radius: 50%;
+    border: 2.5px double currentColor;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-family: 'Fraunces', serif;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    line-height: 1.25;
+    transform: rotate(-11deg);
+    opacity: 0.92;
+}
+
+.stamp-verified { color: #6FE3A8; }
+.stamp-flagged { color: #F0A0A0; }
 
 .result-label {
-    color: #8dafc2;
+    color: #8DA3B5;
     font-size: 10px;
     letter-spacing: 2px;
     font-weight: 800;
@@ -416,22 +505,18 @@ div[data-testid="column"] div.stButton > button.history-chip,
 }
 
 .result-number {
-    color: white;
-    font-size: 34px; font-weight: 900;
+    font-family: 'IBM Plex Mono', monospace;
+    color: #F7F3E8;
+    font-size: 30px; font-weight: 700;
     letter-spacing: 2px;
-    margin-top: 3px;
+    margin-top: 5px;
 }
 
-.result-divider { height: 1px; background: rgba(255,255,255,0.10); margin: 22px 0; }
+.result-divider { height: 1px; background: rgba(201,162,39,0.25); margin: 22px 60px 22px 0; }
 
-.result-line { color: white; font-size: 30px; font-weight: 900; margin-top: 4px; }
+.result-line { font-family: 'Fraunces', serif; color: #F7F3E8; font-size: 27px; font-weight: 600; margin-top: 4px; }
 
-.copy-caption {
-    font-size: 11px;
-    color: #8a99a6;
-    margin-top: -6px;
-    margin-bottom: 16px;
-}
+.copy-caption { font-size: 11px; color: var(--ink-soft); margin-top: 10px; margin-bottom: 16px; }
 
 
 /* =====================================================
@@ -439,21 +524,24 @@ div[data-testid="column"] div.stButton > button.history-chip,
    ===================================================== */
 
 div[data-testid="stMetric"] {
-    background: linear-gradient(180deg, #ffffff, #fbfcfd);
-    border: 1px solid #dbe4eb;
-    border-radius: 15px;
-    padding: 17px;
-    box-shadow: 0 5px 18px rgba(15,23,42,0.04);
+    background: #FFFFFF;
+    border: 1px solid #DED4B8;
+    border-radius: 4px;
+    padding: 16px;
+    box-shadow: 0 4px 14px rgba(11,31,48,0.04);
 }
 
 div[data-testid="stMetricLabel"] {
-    color: #758493;
+    color: var(--ink-soft);
     font-size: 10px; font-weight: 800;
-    letter-spacing: 0.8px;
+    letter-spacing: 1px;
     text-transform: uppercase;
 }
 
-div[data-testid="stMetricValue"] { color: #112c3e; font-size: 20px; font-weight: 900; }
+div[data-testid="stMetricValue"] {
+    font-family: 'Fraunces', serif;
+    color: var(--navy); font-size: 19px; font-weight: 600;
+}
 
 
 /* =====================================================
@@ -461,46 +549,51 @@ div[data-testid="stMetricValue"] { color: #112c3e; font-size: 20px; font-weight:
    ===================================================== */
 
 @keyframes alertPulse {
-    0% { box-shadow: 0 0 0 0 rgba(220,38,38,0.30); }
-    70% { box-shadow: 0 0 0 12px rgba(220,38,38,0); }
-    100% { box-shadow: 0 0 0 0 rgba(220,38,38,0); }
+    0% { box-shadow: 0 0 0 0 rgba(156,43,43,0.35); }
+    70% { box-shadow: 0 0 0 13px rgba(156,43,43,0); }
+    100% { box-shadow: 0 0 0 0 rgba(156,43,43,0); }
 }
 
 .danger-card {
     position: relative;
-    overflow: hidden;
-    background: linear-gradient(135deg, #7f1515, #ce2626);
-    border-radius: 21px;
-    padding: 28px;
+    overflow: visible;
+    background: linear-gradient(155deg, #5C1414, var(--alert));
+    border-radius: 4px;
+    padding: 30px;
     margin-top: 24px;
     color: white;
     text-align: center;
-    animation: alertPulse 2s infinite;
-    box-shadow: 0 15px 35px rgba(200,30,30,0.20);
+    animation: alertPulse 2.2s infinite, cardReveal 0.35s ease-out;
+    box-shadow: 0 18px 38px rgba(156,43,43,0.24);
+    border-top: 3px dashed rgba(255,255,255,0.35);
 }
 
 .danger-symbol {
-    width: 70px; height: 70px;
-    margin: 0 auto 12px auto;
+    width: 66px; height: 66px;
+    margin: 0 auto 14px auto;
     border-radius: 50%;
-    background: rgba(255,255,255,0.13);
-    border: 2px solid rgba(255,255,255,0.35);
+    background: rgba(255,255,255,0.12);
+    border: 2px solid rgba(255,255,255,0.4);
     display: flex; align-items: center; justify-content: center;
-    font-size: 40px; font-weight: 900;
+    font-family: 'Fraunces', serif;
+    font-size: 36px; font-weight: 700;
 }
 
-.danger-title { font-size: 30px; font-weight: 1000; letter-spacing: 0.4px; }
-.danger-container { font-size: 27px; font-weight: 900; margin-top: 15px; letter-spacing: 2px; }
-.danger-info { color: #ffe1e1; font-size: 13px; margin-top: 15px; }
-.danger-line { color: white; font-size: 25px; font-weight: 900; margin-top: 4px; }
+.danger-title { font-family: 'Fraunces', serif; font-size: 27px; font-weight: 700; letter-spacing: 0.2px; }
+.danger-container { font-family: 'IBM Plex Mono', monospace; font-size: 24px; font-weight: 700; margin-top: 15px; letter-spacing: 2px; }
+.danger-info { color: #FBDADA; font-size: 12.5px; margin-top: 15px; letter-spacing: 0.6px; }
+.danger-line { font-family: 'Fraunces', serif; color: white; font-size: 23px; font-weight: 700; margin-top: 4px; }
 
 .danger-stop {
     margin-top: 22px;
     background: white;
-    color: #a91616;
+    color: var(--alert);
     padding: 13px;
-    border-radius: 11px;
-    font-size: 21px; font-weight: 1000;
+    border-radius: 3px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px; font-weight: 800;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
 }
 
 
@@ -509,24 +602,28 @@ div[data-testid="stMetricValue"] { color: #112c3e; font-size: 20px; font-weight:
    ===================================================== */
 
 .not-found {
-    background: linear-gradient(135deg, #541414, #b32121);
-    border-radius: 20px;
-    padding: 28px;
+    background: linear-gradient(155deg, #4A1010, #7A1E1E);
+    border-radius: 4px;
+    padding: 30px;
     text-align: center;
     color: white;
     margin-top: 24px;
-    box-shadow: 0 14px 32px rgba(180,30,30,0.18);
+    box-shadow: 0 16px 34px rgba(122,30,30,0.20);
+    border-top: 3px dashed rgba(255,255,255,0.3);
+    animation: cardReveal 0.35s ease-out;
 }
 
-.not-found-title { font-size: 27px; font-weight: 900; }
-.not-found-number { font-size: 25px; font-weight: 900; margin-top: 12px; letter-spacing: 2px; }
+.not-found-title { font-family: 'Fraunces', serif; font-size: 25px; font-weight: 700; }
+.not-found-number { font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 700; margin-top: 12px; letter-spacing: 2px; }
 
 .not-found-stop {
     background: white;
-    color: #9c1d1d;
-    border-radius: 10px;
+    color: #7A1E1E;
+    border-radius: 3px;
     padding: 12px;
-    font-size: 18px; font-weight: 900;
+    font-size: 15px; font-weight: 800;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
     margin-top: 20px;
 }
 
@@ -539,47 +636,31 @@ div[data-testid="stMetricValue"] { color: #112c3e; font-size: 20px; font-weight:
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 14px 18px;
-    border-radius: 13px;
-    margin-bottom: 8px;
-    font-weight: 800;
+    padding: 13px 18px;
+    border-radius: 3px;
+    margin-bottom: 7px;
+    font-weight: 700;
+    background: #FFFFFF;
 }
 
-.batch-row-ok {
-    background: rgba(16,165,103,0.09);
-    border: 1px solid rgba(16,165,103,0.25);
-    color: #0a7a4d;
-}
+.batch-row-ok { border-left: 4px solid var(--verified); color: var(--verified); }
+.batch-row-bad { border-left: 4px solid var(--alert); color: var(--alert); }
+.batch-row-warn { border-left: 4px solid var(--brass-deep); color: var(--brass-deep); }
 
-.batch-row-bad {
-    background: rgba(200,30,30,0.07);
-    border: 1px solid rgba(200,30,30,0.22);
-    color: #a91616;
-}
+.batch-icon { font-size: 17px; min-width: 20px; text-align: center; }
+.batch-number { font-family: 'IBM Plex Mono', monospace; font-size: 14.5px; letter-spacing: 1px; min-width: 150px; color: var(--navy); }
+.batch-detail { font-size: 12px; font-weight: 600; opacity: 0.9; flex: 1; }
 
-.batch-row-warn {
-    background: rgba(244,184,58,0.14);
-    border: 1px solid rgba(200,150,20,0.28);
-    color: #8a6300;
-}
-
-.batch-icon { font-size: 18px; min-width: 22px; text-align: center; }
-.batch-number { font-size: 15px; letter-spacing: 1px; min-width: 150px; }
-.batch-detail { font-size: 12px; font-weight: 700; opacity: 0.85; flex: 1; }
-
-.batch-summary {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 14px;
-}
+.batch-summary { display: flex; gap: 10px; margin-bottom: 14px; }
 
 .batch-pill {
     flex: 1;
     text-align: center;
     padding: 12px;
-    border-radius: 12px;
+    border-radius: 3px;
     font-size: 12px;
     font-weight: 800;
+    letter-spacing: 0.4px;
 }
 
 
@@ -589,10 +670,23 @@ div[data-testid="stMetricValue"] { color: #112c3e; font-size: 20px; font-weight:
 
 .app-footer {
     text-align: center;
-    color: #8a99a6;
+    color: var(--ink-soft);
     font-size: 10px;
-    letter-spacing: 0.8px;
-    margin-top: 40px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    margin-top: 44px;
+}
+
+
+/* =====================================================
+   HAREKET AZALTMA TERCİHİ
+   ===================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-content, .container-result, .danger-card, .not-found {
+        animation: none !important;
+    }
+    .danger-card { animation: none !important; box-shadow: 0 18px 38px rgba(156,43,43,0.24) !important; }
 }
 
 
@@ -602,39 +696,37 @@ div[data-testid="stMetricValue"] { color: #112c3e; font-size: 20px; font-weight:
 
 @media (max-width: 650px) {
     .block-container { padding-left: 13px; padding-right: 13px; }
-    .hero { min-height: 300px; padding: 25px 22px; border-radius: 20px; }
+    .hero { min-height: 300px; padding: 28px 24px; }
     .hero-content { width: 100%; }
-    .hero-title { font-size: 31px; }
-    .hero-visual { width: 180px; right: 8px; bottom: 5px; opacity: 0.42; }
-    .result-number { font-size: 28px; }
-    .result-line { font-size: 25px; }
-    .danger-title { font-size: 25px; }
+    .hero-title { font-size: 32px; }
+    .hero-visual { width: 150px; height: 150px; top: auto; bottom: 0; right: 0; opacity: 0.35; }
+    .result-number { font-size: 25px; }
+    .result-line { font-size: 22px; }
+    .danger-title { font-size: 23px; }
+    .stamp-badge { width: 64px; height: 64px; font-size: 8.5px; top: 16px; right: 16px; }
     .batch-row { flex-wrap: wrap; }
 }
 
 </style>
 """
 
-# Yüksek kontrast modu için ek/override kurallar
+# Yüksek kontrast modu (erişilebilirlik) — palet dışına çıkan, saf siyah/beyaz mod
 HIGH_CONTRAST_CSS = """
 <style>
 
-.stApp {
-    background: #ffffff !important;
-}
+.stApp { background: #ffffff !important; background-image: none !important; }
 
 .stat-card, div[data-testid="stVerticalBlockBorderWrapper"], div[data-testid="stMetric"] {
     border: 2px solid #000000 !important;
     box-shadow: none !important;
 }
 
-.stat-value, .result-label, div[data-testid="stMetricValue"] {
-    color: #000000 !important;
-}
+.stat-value, .result-label, div[data-testid="stMetricValue"], h1, h2, h3 { color: #000000 !important; }
 
 div[data-testid="stTextInput"] input, div[data-testid="stTextArea"] textarea {
     border: 2px solid #000000 !important;
     color: #000000 !important;
+    background: #ffffff !important;
 }
 
 div.stButton > button {
@@ -644,26 +736,16 @@ div.stButton > button {
     box-shadow: none !important;
 }
 
-.container-result {
-    background: #000000 !important;
-}
+.container-result, .hero { background: #000000 !important; background-image: none !important; }
+.danger-card { background: #b30000 !important; animation: none !important; }
+.not-found { background: #7a0000 !important; }
+.success-banner { background: #005c33 !important; }
 
-.danger-card {
-    background: #b30000 !important;
-    animation: none !important;
-}
+.batch-row-ok { background: #e6f7ee !important; border-left: 4px solid #0a7a4d !important; }
+.batch-row-bad { background: #fbe6e6 !important; border-left: 4px solid #a91616 !important; }
+.batch-row-warn { background: #fff6df !important; border-left: 4px solid #8a6300 !important; }
 
-.not-found {
-    background: #7a0000 !important;
-}
-
-.success-banner {
-    background: #005c33 !important;
-}
-
-.batch-row-ok { background: #e6f7ee !important; border: 2px solid #0a7a4d !important; }
-.batch-row-bad { background: #fbe6e6 !important; border: 2px solid #a91616 !important; }
-.batch-row-warn { background: #fff6df !important; border: 2px solid #8a6300 !important; }
+.stamp-badge { color: #ffffff !important; }
 
 </style>
 """
@@ -732,7 +814,7 @@ def load_database(file_name, modified_time):
 
 def lookup_container(df, raw_number):
     """Tek bir konteyner numarasını veritabanında arar.
-    Dönüş: (status, record_or_none) -- status: 'ok' | 'not_found' | 'duplicate' | 'invalid'"""
+    Dönüş: (status, record_or_none, normalized) -- status: 'ok' | 'not_found' | 'duplicate' | 'invalid'"""
 
     normalized = normalize_container(raw_number)
 
@@ -770,7 +852,7 @@ def select_history_number(number):
 
 
 # =========================================================
-# ÜST ARAÇ ÇUBUĞU (kontrast anahtarı)
+# ÜST ARAÇ ÇUBUĞU
 # =========================================================
 
 toolbar_col = st.columns([5, 2])[1]
@@ -784,57 +866,52 @@ with toolbar_col:
 
 
 # =========================================================
-# HERO / GÖRSEL
+# HERO — pusula gülü ile "kaptan köşkü" paneli
 # =========================================================
 
 st.html("""
 <div class="hero" role="banner" aria-label="ALPORT Banjul Konteyner Takip Sistemi">
 
-    <div class="hero-glow-one"></div>
-    <div class="hero-glow-two"></div>
-
     <div class="hero-content">
 
-        <div class="hero-brand">ALPORT BANJUL</div>
+        <div class="hero-brand">ALPORT BANJUL &nbsp;·&nbsp; LİMAN OPERASYONLARI</div>
 
         <div class="hero-title">
             Konteyner<br>
-            Takip Sistemi
+            Kayıt Defteri
         </div>
 
         <div class="hero-subtitle">
-            Gemi yüklemelerinde doğru konteyner,
-            doğru shipping line ve operasyonel
-            güvenlik kontrolü.
+            Gemi yüklemesinden önceki son kontrol noktası:
+            konteyner numarası, shipping line ve saha kaydını
+            tek ekranda doğrulayın.
         </div>
 
-        <div class="hero-badge">OPERASYON • KONTEYNER KONTROL</div>
+        <div class="hero-badge">⚓ &nbsp;OPERASYONEL DOĞRULAMA SİSTEMİ</div>
 
     </div>
 
-    <svg class="hero-visual" viewBox="0 0 500 330" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M30 285 Q80 270 130 285 T230 285 T330 285 T430 285" fill="none" stroke="#6ED8E8" stroke-width="5" opacity="0.55" />
-        <path d="M60 305 Q110 290 160 305 T260 305 T360 305 T460 305" fill="none" stroke="#6ED8E8" stroke-width="3" opacity="0.30" />
-        <path d="M85 205 L430 205 L395 270 L140 270 Z" fill="#E8F6FA" opacity="0.96" />
-        <rect x="320" y="145" width="75" height="60" rx="4" fill="#E8F6FA" />
-        <rect x="334" y="158" width="15" height="13" fill="#1B6680" />
-        <rect x="357" y="158" width="15" height="13" fill="#1B6680" />
-        <rect x="125" y="150" width="74" height="52" rx="3" fill="#F05A47" />
-        <line x1="143" y1="153" x2="143" y2="199" stroke="#FFAA9E" stroke-width="2" />
-        <line x1="161" y1="153" x2="161" y2="199" stroke="#FFAA9E" stroke-width="2" />
-        <line x1="179" y1="153" x2="179" y2="199" stroke="#FFAA9E" stroke-width="2" />
-        <rect x="203" y="150" width="74" height="52" rx="3" fill="#F4B83A" />
-        <line x1="221" y1="153" x2="221" y2="199" stroke="#FFE2A1" stroke-width="2" />
-        <line x1="239" y1="153" x2="239" y2="199" stroke="#FFE2A1" stroke-width="2" />
-        <line x1="257" y1="153" x2="257" y2="199" stroke="#FFE2A1" stroke-width="2" />
-        <rect x="164" y="94" width="74" height="52" rx="3" fill="#26B2AE" />
-        <line x1="182" y1="97" x2="182" y2="143" stroke="#8FE7E3" stroke-width="2" />
-        <line x1="200" y1="97" x2="200" y2="143" stroke="#8FE7E3" stroke-width="2" />
-        <line x1="218" y1="97" x2="218" y2="143" stroke="#8FE7E3" stroke-width="2" />
-        <line x1="80" y1="70" x2="80" y2="200" stroke="#8FD3E4" stroke-width="8" />
-        <line x1="80" y1="72" x2="270" y2="72" stroke="#8FD3E4" stroke-width="7" />
-        <line x1="240" y1="72" x2="240" y2="120" stroke="#8FD3E4" stroke-width="3" />
-        <rect x="225" y="118" width="30" height="7" rx="2" fill="#F4B83A" />
+    <svg class="hero-visual" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="230" cy="200" r="150" fill="none" stroke="#C9A227" stroke-width="1" opacity="0.35"/>
+        <circle cx="230" cy="200" r="112" fill="none" stroke="#C9A227" stroke-width="1" opacity="0.28"/>
+        <circle cx="230" cy="200" r="4" fill="#C9A227" opacity="0.85"/>
+
+        <g stroke="#C9A227" stroke-width="1" opacity="0.55">
+            <line x1="230" y1="30" x2="230" y2="370" />
+            <line x1="60" y1="200" x2="400" y2="200" />
+            <line x1="123" y1="93" x2="337" y2="307" opacity="0.35"/>
+            <line x1="337" y1="93" x2="123" y2="307" opacity="0.35"/>
+        </g>
+
+        <path d="M230 48 L242 190 L230 210 L218 190 Z" fill="#C9A227" opacity="0.9"/>
+        <path d="M230 352 L242 210 L230 190 L218 210 Z" fill="#E4D9B0" opacity="0.55"/>
+        <path d="M78 200 L220 188 L240 200 L220 212 Z" fill="#E4D9B0" opacity="0.45"/>
+        <path d="M382 200 L240 188 L220 200 L240 212 Z" fill="#E4D9B0" opacity="0.45"/>
+
+        <text x="230" y="24" text-anchor="middle" fill="#C9A227" font-family="Fraunces, serif" font-size="15" opacity="0.8">K</text>
+        <text x="230" y="392" text-anchor="middle" fill="#C9A227" font-family="Fraunces, serif" font-size="15" opacity="0.8">G</text>
+        <text x="42" y="205" text-anchor="middle" fill="#C9A227" font-family="Fraunces, serif" font-size="15" opacity="0.8">B</text>
+        <text x="418" y="205" text-anchor="middle" fill="#C9A227" font-family="Fraunces, serif" font-size="15" opacity="0.8">D</text>
     </svg>
 
 </div>
@@ -850,7 +927,7 @@ if not os.path.exists(EXCEL_FILE):
     st.stop()
 
 try:
-    with st.spinner("Veritabanı yükleniyor..."):
+    with st.spinner("Kayıt defteri yükleniyor..."):
         modified_time = os.path.getmtime(EXCEL_FILE)
         df = load_database(EXCEL_FILE, modified_time)
 except Exception:
@@ -903,10 +980,10 @@ line_options = ["Hat seçilmedi"] + available_lines
 
 
 # =========================================================
-# SEKMELER: TEKLİ ARAMA / TOPLU DOĞRULAMA
+# SEKMELER
 # =========================================================
 
-tab_single, tab_batch = st.tabs(["🔍 Tekli Arama", "📋 Toplu Doğrulama"])
+tab_single, tab_batch = st.tabs(["⚓ Tekli Arama", "📋 Toplu Doğrulama"])
 
 
 # ---------------------------------------------------------
@@ -920,7 +997,6 @@ with tab_single:
         st.subheader("Konteyner Doğrulama")
         st.caption("Yükleme hattını seçin ve konteyner numarasını girin.")
 
-        # Arama geçmişi chip'leri
         if st.session_state.search_history:
 
             st.html('<div class="history-label">SON ARAMALAR</div>')
@@ -948,7 +1024,6 @@ with tab_single:
             key="container_query"
         )
 
-        # Canlı format ipucu
         live_normalized = normalize_container(container_input)
 
         if not live_normalized:
@@ -979,14 +1054,10 @@ with tab_single:
 
         push_history(normalized, status)
 
-        # =================================================
-        # GEÇERSİZ FORMAT
-        # =================================================
-
         if status == "invalid":
             st.html(f"""
                 <div class="not-found" role="alert">
-                    <div style="font-size:45px; margin-bottom:8px;">⚠</div>
+                    <div style="font-size:42px; margin-bottom:8px;">⚠</div>
                     <div class="not-found-title">GEÇERSİZ FORMAT</div>
                     <div class="not-found-number">{safe(normalized)}</div>
                     <div style="color:#ffdede; margin-top:12px; font-size:13px;">
@@ -996,14 +1067,10 @@ with tab_single:
                 </div>
             """)
 
-        # =================================================
-        # BULUNAMADI
-        # =================================================
-
         elif status == "not_found":
             st.html(f"""
                 <div class="not-found" role="alert">
-                    <div style="font-size:45px; margin-bottom:8px;">ⓧ</div>
+                    <div style="font-size:42px; margin-bottom:8px;">ⓧ</div>
                     <div class="not-found-title">KONTEYNER BULUNAMADI</div>
                     <div class="not-found-number">{safe(normalized)}</div>
                     <div style="color:#ffdede; margin-top:12px; font-size:13px;">
@@ -1013,17 +1080,9 @@ with tab_single:
                 </div>
             """)
 
-        # =================================================
-        # DUPLICATE
-        # =================================================
-
         elif status == "duplicate":
             st.error("Aynı konteyner için birden fazla kayıt bulundu.")
             st.warning("Yükleme öncesinde Operasyon Departmanı ile teyit edin.")
-
-        # =================================================
-        # KONTEYNER BULUNDU
-        # =================================================
 
         else:
             record = record_or_result
@@ -1039,7 +1098,7 @@ with tab_single:
             imo_class = clean_value(record, "IMO CLS")
             discharge_date = clean_value(record, "DISCHARGE DATE")
 
-            line_color = LINE_COLORS.get(shipping_line, "#23A6A8")
+            line_color = LINE_COLORS.get(shipping_line, "#B08D3E")
 
             wrong_line = (
                 selected_line != "Hat seçilmedi"
@@ -1049,6 +1108,7 @@ with tab_single:
             if wrong_line:
                 st.html(f"""
                     <div class="danger-card" role="alert">
+                        <div class="stamp-badge stamp-flagged">RED<br>FLAG</div>
                         <div class="danger-symbol">!</div>
                         <div class="danger-title">YANLIŞ SHIPPING LINE</div>
                         <div class="danger-container">{safe(container)}</div>
@@ -1078,6 +1138,8 @@ with tab_single:
 
                 st.html(f"""
                     <div class="container-result">
+                        <div class="manifest-tag">Manifesto Kaydı</div>
+                        <div class="stamp-badge stamp-verified">DOĞRU-<br>LANDI</div>
                         <div class="container-accent" style="background:{line_color};"></div>
                         <div class="result-label">KONTEYNER NUMARASI</div>
                         <div class="result-number">{safe(container)}</div>
@@ -1087,7 +1149,7 @@ with tab_single:
                     </div>
                 """)
 
-                st.html('<div class="copy-caption">Numarayı kopyalamak için aşağıdaki kutunun sağ üstündeki simgeye tıklayın</div>')
+                st.html('<div class="copy-caption">Numarayı kopyalamak için kutunun sağ üstündeki simgeye tıklayın</div>')
                 st.code(container, language=None)
 
                 c1, c2 = st.columns(2)
@@ -1159,7 +1221,6 @@ with tab_batch:
             for raw in raw_lines:
                 status, record_or_result, normalized = lookup_container(df, raw)
 
-                # Yapıştırılan liste içindeki kendi tekrarları
                 if normalized in seen_in_batch:
                     rows.append({
                         "number": normalized,
@@ -1204,19 +1265,18 @@ with tab_batch:
 
                 push_history(normalized, status)
 
-        # Özet sayaçları
         ok_count = sum(1 for r in rows if r["status"] == "ok")
         bad_count = len(rows) - ok_count
 
         st.html(f"""
             <div class="batch-summary">
-                <div class="batch-pill" style="background:rgba(16,165,103,0.12); color:#0a7a4d;">
+                <div class="batch-pill" style="background:rgba(31,110,74,0.10); color:#1F6E4A;">
                     ✓ {ok_count} Uygun
                 </div>
-                <div class="batch-pill" style="background:rgba(200,30,30,0.09); color:#a91616;">
+                <div class="batch-pill" style="background:rgba(156,43,43,0.08); color:#9C2B2B;">
                     ✗ {bad_count} Sorunlu
                 </div>
-                <div class="batch-pill" style="background:rgba(15,23,42,0.06); color:#374151;">
+                <div class="batch-pill" style="background:rgba(11,31,48,0.06); color:#0B1F30;">
                     Toplam {len(rows)}
                 </div>
             </div>
@@ -1249,6 +1309,6 @@ with tab_batch:
 
 st.html("""
 <div class="app-footer">
-    ALPORT BANJUL • KONTEYNER TAKİP SİSTEMİ • OPERASYON
+    ⚓ ALPORT BANJUL &nbsp;·&nbsp; KONTEYNER KAYIT DEFTERİ &nbsp;·&nbsp; OPERASYON
 </div>
 """)
