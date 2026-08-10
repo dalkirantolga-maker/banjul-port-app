@@ -87,16 +87,18 @@ BASE_CSS = """
 
 :root {
     --navy: #0B1F30;
-    --navy-deep: #071624;
+    --navy-deep: #050D16;
     --steel: #163A52;
-    --brass: #C9A227;
-    --brass-deep: #8C6D2F;
-    --parchment: #F6F3EA;
-    --parchment-line: #E4DDC8;
-    --ink: #1B2530;
-    --ink-soft: #5B6B78;
-    --alert: #9C2B2B;
-    --verified: #1F6E4A;
+    --brass: #D9B84A;
+    --brass-deep: #C9A227;
+    --surface: #0F2033;
+    --surface-border: rgba(201,162,39,0.22);
+    --parchment: #F3EFE2;
+    --parchment-line: rgba(201,162,39,0.09);
+    --ink: #E7E4D8;
+    --ink-soft: #85A0B3;
+    --alert: #C24545;
+    --verified: #35A97C;
 }
 
 #MainMenu { visibility: hidden; }
@@ -116,8 +118,12 @@ html, body, [class*="css"] {
 h1, h2, h3, .stMarkdown h3 {
     font-family: 'Fraunces', serif !important;
     font-weight: 600 !important;
-    color: var(--navy) !important;
+    color: var(--parchment) !important;
     letter-spacing: -0.3px;
+}
+
+p, span, label, .stCaption, div[data-testid="stCaptionContainer"] {
+    color: var(--ink) !important;
 }
 
 code, .stCode, div[data-testid="stTextInput"] input, div[data-testid="stTextArea"] textarea {
@@ -130,12 +136,13 @@ code, .stCode, div[data-testid="stTextInput"] input, div[data-testid="stTextArea
    ===================================================== */
 
 .stApp {
-    background-color: var(--parchment);
+    background-color: #060F1A;
     background-image:
         linear-gradient(var(--parchment-line) 1px, transparent 1px),
         linear-gradient(90deg, var(--parchment-line) 1px, transparent 1px),
-        radial-gradient(circle at 8% 0%, rgba(201,162,39,0.10), transparent 30%);
-    background-size: 42px 42px, 42px 42px, 100% 100%;
+        radial-gradient(circle at 8% 0%, rgba(201,162,39,0.09), transparent 32%),
+        radial-gradient(circle at 100% 100%, rgba(31,110,124,0.08), transparent 35%);
+    background-size: 42px 42px, 42px 42px, 100% 100%, 100% 100%;
     background-attachment: fixed;
 }
 
@@ -262,22 +269,22 @@ code, .stCode, div[data-testid="stTextInput"] input, div[data-testid="stTextArea
 .stat-card {
     position: relative;
     overflow: hidden;
-    background: #FFFFFF;
-    border: 1px solid #DED4B8;
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
     border-radius: 4px;
     padding: 20px 22px;
     min-height: 96px;
-    box-shadow: 0 4px 14px rgba(11,31,48,0.05);
+    box-shadow: 0 4px 18px rgba(0,0,0,0.28);
 }
 
 .stat-accent-blue, .stat-accent-green {
     position: absolute; top: 0; left: 0;
     width: 4px; height: 100%;
-    background: var(--navy);
+    background: var(--steel);
 }
 .stat-accent-green { background: var(--brass); }
 
-.stat-icon { font-size: 18px; margin-bottom: 6px; color: var(--brass-deep); }
+.stat-icon { font-size: 18px; margin-bottom: 6px; color: var(--brass); }
 
 .stat-label {
     color: var(--ink-soft);
@@ -288,7 +295,7 @@ code, .stCode, div[data-testid="stTextInput"] input, div[data-testid="stTextArea
 
 .stat-value {
     font-family: 'Fraunces', serif;
-    color: var(--navy);
+    color: var(--parchment);
     font-size: 23px; font-weight: 600;
     margin-top: 5px;
 }
@@ -300,63 +307,65 @@ code, .stCode, div[data-testid="stTextInput"] input, div[data-testid="stTextArea
 
 div[data-testid="stVerticalBlockBorderWrapper"] {
     border-radius: 5px !important;
-    background: #FFFFFF !important;
-    border: 1px solid #DED4B8 !important;
-    box-shadow: 0 8px 26px rgba(11,31,48,0.05);
+    background: var(--surface) !important;
+    border: 1px solid var(--surface-border) !important;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.30);
 }
 
 div[data-testid="stTextInput"] input {
     min-height: 62px;
-    background: #FCFAF3;
+    background: #0A1826;
     border-radius: 3px;
-    border: 1.5px solid #D3C9A8;
+    border: 1.5px solid rgba(201,162,39,0.35);
     text-align: center;
     font-size: 22px; font-weight: 600;
     letter-spacing: 2px;
     text-transform: uppercase;
-    color: var(--navy);
+    color: var(--parchment);
 }
 
 div[data-testid="stTextInput"] input:focus {
     border-color: var(--brass);
-    box-shadow: 0 0 0 3px rgba(201,162,39,0.16);
+    box-shadow: 0 0 0 3px rgba(201,162,39,0.18);
 }
 
 div[data-testid="stTextArea"] textarea {
-    background: #FCFAF3;
+    background: #0A1826;
     border-radius: 3px;
-    border: 1.5px solid #D3C9A8;
+    border: 1.5px solid rgba(201,162,39,0.35);
     font-size: 15px; font-weight: 600;
     letter-spacing: 1px;
     text-transform: uppercase;
-    color: var(--navy);
+    color: var(--parchment);
 }
 
 div[data-baseweb="select"] > div {
     min-height: 54px;
     border-radius: 3px !important;
-    background-color: #FCFAF3;
-    border-color: #D3C9A8 !important;
+    background-color: #0A1826;
+    border-color: rgba(201,162,39,0.35) !important;
+    color: var(--parchment) !important;
 }
+
+div[data-baseweb="select"] span { color: var(--parchment) !important; }
 
 div.stButton > button {
     min-height: 54px;
     width: 100%;
     border-radius: 3px;
-    border: 1px solid var(--navy);
-    background: var(--navy);
-    color: var(--brass);
+    border: 1px solid var(--brass);
+    background: linear-gradient(135deg, var(--brass-deep), var(--brass));
+    color: var(--navy-deep);
     font-family: 'Inter', sans-serif;
     font-size: 14.5px; font-weight: 800;
     letter-spacing: 1.6px;
     text-transform: uppercase;
-    box-shadow: 0 8px 18px rgba(11,31,48,0.18);
+    box-shadow: 0 8px 20px rgba(201,162,39,0.18);
     transition: all 0.15s ease;
 }
 
 div.stButton > button:hover {
-    background: var(--navy-deep);
-    border-color: var(--brass);
+    background: linear-gradient(135deg, var(--brass), #EBCF6E);
     transform: translateY(-1px);
 }
 
@@ -377,8 +386,8 @@ div.stButton > button:hover {
     border-radius: 3px;
 }
 
-.format-ok { color: var(--verified); background: rgba(31,110,74,0.08); }
-.format-bad { color: var(--alert); background: rgba(156,43,43,0.06); }
+.format-ok { color: #6FE3A8; background: rgba(53,169,124,0.12); }
+.format-bad { color: #F0A0A0; background: rgba(194,69,69,0.10); }
 .format-empty { color: var(--ink-soft); background: transparent; }
 
 
@@ -394,8 +403,7 @@ div.stButton > button:hover {
     margin-bottom: 8px;
 }
 
-.history-row div.stButton > button,
-div[data-testid="column"] div.stButton > button.history-chip {
+div.stButton > button[kind="secondary"] {
     min-height: 32px;
     width: auto;
     padding: 4px 13px;
@@ -404,13 +412,17 @@ div[data-testid="column"] div.stButton > button.history-chip {
     letter-spacing: 0.5px;
     text-transform: none;
     border-radius: 30px;
-    background: #FCFAF3;
-    color: var(--navy);
+    background: #0A1826;
+    color: var(--parchment);
     box-shadow: none;
-    border: 1px solid #D3C9A8;
+    border: 1px solid rgba(201,162,39,0.30);
 }
 
-.history-row div.stButton > button:hover { background: #F1EAD2; transform: none; }
+div.stButton > button[kind="secondary"]:hover {
+    background: rgba(201,162,39,0.12);
+    transform: none;
+    border-color: var(--brass);
+}
 
 
 /* =====================================================
@@ -524,11 +536,11 @@ div[data-testid="column"] div.stButton > button.history-chip {
    ===================================================== */
 
 div[data-testid="stMetric"] {
-    background: #FFFFFF;
-    border: 1px solid #DED4B8;
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
     border-radius: 4px;
     padding: 16px;
-    box-shadow: 0 4px 14px rgba(11,31,48,0.04);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.22);
 }
 
 div[data-testid="stMetricLabel"] {
@@ -540,7 +552,7 @@ div[data-testid="stMetricLabel"] {
 
 div[data-testid="stMetricValue"] {
     font-family: 'Fraunces', serif;
-    color: var(--navy); font-size: 19px; font-weight: 600;
+    color: var(--parchment); font-size: 19px; font-weight: 600;
 }
 
 
@@ -640,16 +652,16 @@ div[data-testid="stMetricValue"] {
     border-radius: 3px;
     margin-bottom: 7px;
     font-weight: 700;
-    background: #FFFFFF;
+    background: var(--surface);
 }
 
-.batch-row-ok { border-left: 4px solid var(--verified); color: var(--verified); }
-.batch-row-bad { border-left: 4px solid var(--alert); color: var(--alert); }
-.batch-row-warn { border-left: 4px solid var(--brass-deep); color: var(--brass-deep); }
+.batch-row-ok { border-left: 4px solid var(--verified); color: #6FE3A8; }
+.batch-row-bad { border-left: 4px solid var(--alert); color: #F0A0A0; }
+.batch-row-warn { border-left: 4px solid var(--brass); color: #E4C863; }
 
 .batch-icon { font-size: 17px; min-width: 20px; text-align: center; }
-.batch-number { font-family: 'IBM Plex Mono', monospace; font-size: 14.5px; letter-spacing: 1px; min-width: 150px; color: var(--navy); }
-.batch-detail { font-size: 12px; font-weight: 600; opacity: 0.9; flex: 1; }
+.batch-number { font-family: 'IBM Plex Mono', monospace; font-size: 14.5px; letter-spacing: 1px; min-width: 150px; color: var(--parchment); }
+.batch-detail { font-size: 12px; font-weight: 600; opacity: 0.85; flex: 1; }
 
 .batch-summary { display: flex; gap: 10px; margin-bottom: 14px; }
 
@@ -670,7 +682,7 @@ div[data-testid="stMetricValue"] {
 
 .app-footer {
     text-align: center;
-    color: var(--ink-soft);
+    color: #4A6478;
     font-size: 10px;
     letter-spacing: 1.4px;
     text-transform: uppercase;
@@ -1270,13 +1282,13 @@ with tab_batch:
 
         st.html(f"""
             <div class="batch-summary">
-                <div class="batch-pill" style="background:rgba(31,110,74,0.10); color:#1F6E4A;">
+                <div class="batch-pill" style="background:rgba(53,169,124,0.14); color:#6FE3A8;">
                     ✓ {ok_count} Uygun
                 </div>
-                <div class="batch-pill" style="background:rgba(156,43,43,0.08); color:#9C2B2B;">
+                <div class="batch-pill" style="background:rgba(194,69,69,0.12); color:#F0A0A0;">
                     ✗ {bad_count} Sorunlu
                 </div>
-                <div class="batch-pill" style="background:rgba(11,31,48,0.06); color:#0B1F30;">
+                <div class="batch-pill" style="background:rgba(201,162,39,0.10); color:#D9B84A;">
                     Toplam {len(rows)}
                 </div>
             </div>
