@@ -172,14 +172,14 @@ code, .stCode, div[data-testid="stTextInput"] input, div[data-testid="stTextArea
     display: inline-flex;
     align-items: center;
     background: #FFFFFF;
-    border-radius: 6px;
-    padding: 8px 14px;
-    margin-bottom: 18px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+    border-radius: 8px;
+    padding: 12px 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.20);
 }
 
 .hero-logo-badge img {
-    height: 26px;
+    height: 48px;
     display: block;
 }
 
