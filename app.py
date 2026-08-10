@@ -179,7 +179,7 @@ code, .stCode, div[data-testid="stTextInput"] input, div[data-testid="stTextArea
 }
 
 .hero-logo-badge img {
-    height: 48px;
+    height: 64px;
     display: block;
 }
 
