@@ -1,5 +1,6 @@
 import os
 import re
+import html
 from datetime import datetime
 
 import pandas as pd
@@ -46,12 +47,27 @@ LINE_MAP = {
 }
 
 
+# Her hat için görsel vurgu rengi
+LINE_COLORS = {
+    "MAERSK": "#42B0D5",
+    "CMA CGM": "#E85D2A",
+    "MSC": "#F5B800",
+    "HAPAG-LLOYD": "#F26B21",
+    "ONE": "#D6007F",
+    "COSCO": "#1A5CA8",
+    "PIL": "#E52329",
+    "OBT": "#16A085"
+}
+
+
 # =========================================================
-# TASARIM
+# CSS
 # =========================================================
 
 st.html("""
 <style>
+
+/* STREAMLIT MENÜLERİNİ GİZLE */
 
 #MainMenu {
     visibility: hidden;
@@ -65,379 +81,764 @@ header {
     visibility: hidden;
 }
 
+
+/* SAYFA */
+
 .stApp {
     background:
+        radial-gradient(
+            circle at 0% 0%,
+            rgba(0, 159, 227, 0.12),
+            transparent 32%
+        ),
+        radial-gradient(
+            circle at 100% 25%,
+            rgba(13, 148, 136, 0.08),
+            transparent 28%
+        ),
         linear-gradient(
             180deg,
-            #f3f6f9 0%,
-            #edf1f5 100%
+            #f7fafc 0%,
+            #edf3f7 100%
         );
 }
 
 .block-container {
-    max-width: 920px;
-    padding-top: 2rem;
+    max-width: 960px;
+    padding-top: 1.4rem;
     padding-bottom: 3rem;
 }
 
 
-/* ======================================================
-   ÜST BÖLÜM
-   ====================================================== */
+/* =====================================================
+   HERO
+   ===================================================== */
 
-.top-panel {
+.hero {
+    position: relative;
+    overflow: hidden;
+
+    min-height: 260px;
+
     background:
         linear-gradient(
-            135deg,
-            #081b2b 0%,
-            #0d2f4a 52%,
-            #124969 100%
+            125deg,
+            #061827 0%,
+            #0a3555 50%,
+            #007c91 100%
         );
 
-    border-radius: 22px;
-    padding: 34px 38px;
+    border-radius: 26px;
 
-    box-shadow:
-        0 18px 45px rgba(15, 23, 42, 0.16);
-
-    border:
-        1px solid rgba(255,255,255,0.08);
+    padding: 35px 38px;
 
     margin-bottom: 24px;
-}
-
-.company-name {
-    color: #93b8cf;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-}
-
-.system-title {
-    color: white;
-    font-size: 36px;
-    font-weight: 800;
-    margin-top: 7px;
-    letter-spacing: -0.5px;
-}
-
-.system-description {
-    color: #ccdde7;
-    margin-top: 8px;
-    font-size: 15px;
-    line-height: 1.6;
-}
-
-
-/* ======================================================
-   DURUM KARTLARI
-   ====================================================== */
-
-.status-card {
-    background: #ffffff;
-    border: 1px solid #dce3ea;
-    border-radius: 16px;
-
-    padding: 19px 21px;
 
     box-shadow:
-        0 5px 18px rgba(15,23,42,0.045);
+        0 22px 55px
+        rgba(8, 35, 55, 0.22);
+
+    border:
+        1px solid rgba(255,255,255,0.10);
 }
 
-.status-label {
-    color: #758292;
-    font-size: 11px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    font-weight: 700;
+.hero-glow-one {
+    position: absolute;
+
+    width: 280px;
+    height: 280px;
+
+    border-radius: 50%;
+
+    background:
+        rgba(49, 190, 220, 0.18);
+
+    right: -90px;
+    top: -110px;
+
+    filter: blur(2px);
 }
 
-.status-value {
-    color: #11283b;
-    font-size: 22px;
+.hero-glow-two {
+    position: absolute;
+
+    width: 180px;
+    height: 180px;
+
+    border-radius: 50%;
+
+    background:
+        rgba(255,255,255,0.05);
+
+    right: 140px;
+    bottom: -100px;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 3;
+
+    width: 55%;
+}
+
+.hero-brand {
+    color: #8ed8e4;
+
+    font-size: 12px;
     font-weight: 800;
-    margin-top: 5px;
+
+    letter-spacing: 4px;
+
+    margin-bottom: 9px;
+}
+
+.hero-title {
+    color: white;
+
+    font-size: 40px;
+    font-weight: 900;
+
+    line-height: 1.05;
+
+    letter-spacing: -1px;
+}
+
+.hero-subtitle {
+    color: #c7dce7;
+
+    font-size: 14px;
+
+    margin-top: 15px;
+
+    max-width: 440px;
+
+    line-height: 1.65;
+}
+
+.hero-badge {
+    display: inline-block;
+
+    color: #dff8ff;
+
+    background:
+        rgba(255,255,255,0.10);
+
+    border:
+        1px solid rgba(255,255,255,0.15);
+
+    border-radius: 30px;
+
+    padding: 7px 13px;
+
+    margin-top: 18px;
+
+    font-size: 11px;
 }
 
 
-/* ======================================================
+/* =====================================================
+   HERO GEMİ GÖRSELİ
+   ===================================================== */
+
+.hero-visual {
+    position: absolute;
+
+    right: 25px;
+    bottom: 18px;
+
+    width: 38%;
+
+    max-width: 320px;
+
+    opacity: 0.96;
+}
+
+
+/* =====================================================
+   ÜST DURUM KARTLARI
+   ===================================================== */
+
+.stat-card {
+    position: relative;
+
+    overflow: hidden;
+
+    background:
+        rgba(255,255,255,0.94);
+
+    border:
+        1px solid #dbe5ec;
+
+    border-radius: 17px;
+
+    padding: 20px 22px;
+
+    min-height: 96px;
+
+    box-shadow:
+        0 7px 22px
+        rgba(15,23,42,0.05);
+}
+
+.stat-accent-blue {
+    position: absolute;
+
+    top: 0;
+    left: 0;
+
+    width: 5px;
+    height: 100%;
+
+    background:
+        linear-gradient(
+            #00a1d5,
+            #127ca5
+        );
+}
+
+.stat-accent-green {
+    position: absolute;
+
+    top: 0;
+    left: 0;
+
+    width: 5px;
+    height: 100%;
+
+    background:
+        linear-gradient(
+            #18a57b,
+            #087b65
+        );
+}
+
+.stat-icon {
+    font-size: 20px;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    color: #718190;
+
+    font-size: 10px;
+    font-weight: 800;
+
+    text-transform: uppercase;
+
+    letter-spacing: 1.3px;
+}
+
+.stat-value {
+    color: #102b3d;
+
+    font-size: 22px;
+    font-weight: 900;
+
+    margin-top: 4px;
+}
+
+
+/* =====================================================
    ARAMA PANELİ
-   ====================================================== */
+   ===================================================== */
 
 div[data-testid="stVerticalBlockBorderWrapper"] {
-    background: #ffffff !important;
-    border: 1px solid #d9e1e8 !important;
-    border-radius: 18px !important;
+    border-radius: 20px !important;
+
+    background:
+        rgba(255,255,255,0.92) !important;
+
+    border:
+        1px solid #d8e2e9 !important;
 
     box-shadow:
-        0 8px 25px rgba(15,23,42,0.05);
-
-    padding: 6px;
+        0 10px 32px
+        rgba(15,23,42,0.06);
 }
 
 div[data-testid="stTextInput"] input {
-    height: 62px;
+    min-height: 64px;
 
-    border-radius: 12px;
+    background: #ffffff;
+
+    border-radius: 14px;
+
+    border: 1px solid #cbd8e1;
 
     text-align: center;
 
     font-size: 24px;
-    font-weight: 700;
+    font-weight: 900;
 
     letter-spacing: 2px;
+
     text-transform: uppercase;
-
-    background: #fbfcfd;
-
-    border: 1px solid #cfd8e2;
 }
 
 div[data-testid="stTextInput"] input:focus {
-    border-color: #1c577e;
+    border-color: #0d80a5;
+
     box-shadow:
-        0 0 0 3px rgba(28,87,126,0.08);
+        0 0 0 3px
+        rgba(13,128,165,0.10);
 }
 
 div[data-baseweb="select"] > div {
     min-height: 56px;
-    border-radius: 12px !important;
-    background: #fbfcfd;
+
+    border-radius: 13px !important;
+
+    background-color: white;
 }
 
 div.stButton > button {
+    min-height: 56px;
+
     width: 100%;
-    min-height: 55px;
 
-    border-radius: 12px;
+    border-radius: 13px;
 
-    font-size: 16px;
-    font-weight: 700;
-
-    letter-spacing: 0.3px;
+    border: none;
 
     background:
         linear-gradient(
-            135deg,
-            #123f60,
-            #185d84
+            110deg,
+            #073b5d,
+            #007f9a
         );
 
-    border: none;
+    color: white;
+
+    font-size: 16px;
+    font-weight: 800;
+
+    letter-spacing: 0.5px;
+
+    box-shadow:
+        0 8px 18px
+        rgba(0, 105, 140, 0.16);
 }
 
 div.stButton > button:hover {
     background:
         linear-gradient(
-            135deg,
-            #0f3551,
-            #154d70
+            110deg,
+            #052d49,
+            #006d83
         );
+
+    transform: translateY(-1px);
 }
 
 
-/* ======================================================
-   SONUÇ KARTI
-   ====================================================== */
-
-.result-card {
-    background: #ffffff;
-
-    border: 1px solid #dce3e9;
-
-    border-radius: 18px;
-
-    padding: 28px;
-
-    margin-top: 20px;
-
-    box-shadow:
-        0 10px 28px rgba(15,23,42,0.06);
-}
-
-.result-small-label {
-    color: #7b8896;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-}
-
-.result-container {
-    color: #10293d;
-    font-size: 34px;
-    font-weight: 800;
-    letter-spacing: 2px;
-    margin-top: 4px;
-}
-
-.result-line {
-    color: #143e5e;
-    font-size: 29px;
-    font-weight: 800;
-    margin-top: 4px;
-}
-
-
-/* ======================================================
-   BAŞARILI SONUÇ
-   ====================================================== */
+/* =====================================================
+   DOĞRULANDI
+   ===================================================== */
 
 .success-banner {
+    position: relative;
+
+    overflow: hidden;
+
     background:
         linear-gradient(
-            135deg,
-            #eaf6ef,
-            #f4fbf7
+            115deg,
+            #08794f,
+            #14a570
         );
 
-    border-left: 5px solid #278657;
+    border-radius: 17px;
 
-    color: #20613f;
-
-    border-radius: 13px;
-
-    padding: 16px 18px;
-
-    font-size: 18px;
-    font-weight: 700;
-
-    margin-top: 20px;
-}
-
-
-/* ======================================================
-   HATALI HAT
-   ====================================================== */
-
-.danger-banner {
-    background:
-        linear-gradient(
-            135deg,
-            #fff0f0,
-            #fff7f7
-        );
-
-    border: 2px solid #c93939;
-
-    border-radius: 16px;
-
-    padding: 22px;
-
-    margin-top: 20px;
-
-    text-align: center;
-}
-
-.danger-title {
-    color: #b42323;
-    font-size: 30px;
-    font-weight: 900;
-}
-
-.danger-text {
-    color: #7b2929;
-    margin-top: 8px;
-    font-size: 15px;
-}
-
-.do-not-load {
-    background: #b42323;
+    padding: 18px 22px;
 
     color: white;
 
-    border-radius: 10px;
+    margin-top: 24px;
 
-    padding: 12px 15px;
+    box-shadow:
+        0 12px 28px
+        rgba(16, 153, 103, 0.20);
+}
 
-    margin-top: 18px;
+.success-title {
+    font-size: 19px;
+    font-weight: 900;
+}
 
-    font-size: 20px;
-    font-weight: 800;
+.success-subtitle {
+    color: #d9fff0;
+
+    font-size: 12px;
+
+    margin-top: 3px;
 }
 
 
-/* ======================================================
-   METRİK KARTLARI
-   ====================================================== */
+/* =====================================================
+   KONTEYNER SONUÇ KARTI
+   ===================================================== */
+
+.container-result {
+    position: relative;
+
+    overflow: hidden;
+
+    background:
+        linear-gradient(
+            135deg,
+            #071b2a,
+            #103d5a
+        );
+
+    border-radius: 21px;
+
+    padding: 28px;
+
+    margin-top: 16px;
+    margin-bottom: 18px;
+
+    box-shadow:
+        0 15px 35px
+        rgba(15,42,65,0.17);
+}
+
+.container-accent {
+    width: 7px;
+    height: 100%;
+
+    position: absolute;
+
+    left: 0;
+    top: 0;
+}
+
+.result-label {
+    color: #8dafc2;
+
+    font-size: 10px;
+
+    letter-spacing: 2px;
+
+    font-weight: 800;
+
+    text-transform: uppercase;
+}
+
+.result-number {
+    color: white;
+
+    font-size: 34px;
+    font-weight: 900;
+
+    letter-spacing: 2px;
+
+    margin-top: 3px;
+}
+
+.result-divider {
+    height: 1px;
+
+    background:
+        rgba(255,255,255,0.10);
+
+    margin:
+        22px 0;
+}
+
+.result-line {
+    color: white;
+
+    font-size: 30px;
+    font-weight: 900;
+
+    margin-top: 4px;
+}
+
+
+/* =====================================================
+   METRİKLER
+   ===================================================== */
 
 div[data-testid="stMetric"] {
-    background: #ffffff;
+    background:
+        linear-gradient(
+            180deg,
+            #ffffff,
+            #fbfcfd
+        );
 
-    border: 1px solid #dde4ea;
+    border:
+        1px solid #dbe4eb;
 
-    border-radius: 14px;
+    border-radius: 15px;
 
     padding: 17px;
 
     box-shadow:
-        0 4px 15px rgba(15,23,42,0.035);
+        0 5px 18px
+        rgba(15,23,42,0.04);
 }
 
 div[data-testid="stMetricLabel"] {
-    color: #7b8793;
+    color: #758493;
 
-    font-size: 11px;
+    font-size: 10px;
+    font-weight: 800;
+
+    letter-spacing: 0.8px;
 
     text-transform: uppercase;
-
-    letter-spacing: 0.7px;
-
-    font-weight: 700;
 }
 
 div[data-testid="stMetricValue"] {
-    color: #12283a;
+    color: #112c3e;
 
     font-size: 20px;
-
-    font-weight: 800;
+    font-weight: 900;
 }
 
 
-/* ======================================================
-   ALT BÖLÜM
-   ====================================================== */
+/* =====================================================
+   KRİTİK UYARI
+   ===================================================== */
 
-.footer-text {
-    color: #929eaa;
+@keyframes alertPulse {
+
+    0% {
+        box-shadow:
+            0 0 0 0
+            rgba(220,38,38,0.30);
+    }
+
+    70% {
+        box-shadow:
+            0 0 0 12px
+            rgba(220,38,38,0);
+    }
+
+    100% {
+        box-shadow:
+            0 0 0 0
+            rgba(220,38,38,0);
+    }
+}
+
+
+.danger-card {
+    position: relative;
+
+    overflow: hidden;
+
+    background:
+        linear-gradient(
+            135deg,
+            #7f1515,
+            #ce2626
+        );
+
+    border-radius: 21px;
+
+    padding: 28px;
+
+    margin-top: 24px;
+
+    color: white;
 
     text-align: center;
 
-    font-size: 11px;
+    animation:
+        alertPulse 2s infinite;
 
-    margin-top: 40px;
+    box-shadow:
+        0 15px 35px
+        rgba(200,30,30,0.20);
+}
+
+.danger-symbol {
+    width: 70px;
+    height: 70px;
+
+    margin:
+        0 auto 12px auto;
+
+    border-radius: 50%;
+
+    background:
+        rgba(255,255,255,0.13);
+
+    border:
+        2px solid rgba(255,255,255,0.35);
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    font-size: 40px;
+    font-weight: 900;
+}
+
+.danger-title {
+    font-size: 30px;
+    font-weight: 1000;
 
     letter-spacing: 0.4px;
 }
 
+.danger-container {
+    font-size: 27px;
+    font-weight: 900;
 
-/* ======================================================
-   MOBİL
-   ====================================================== */
+    margin-top: 15px;
 
-@media (max-width: 600px) {
+    letter-spacing: 2px;
+}
+
+.danger-info {
+    color: #ffe1e1;
+
+    font-size: 13px;
+
+    margin-top: 15px;
+}
+
+.danger-line {
+    color: white;
+
+    font-size: 25px;
+    font-weight: 900;
+
+    margin-top: 4px;
+}
+
+.danger-stop {
+    margin-top: 22px;
+
+    background: white;
+
+    color: #a91616;
+
+    padding: 13px;
+
+    border-radius: 11px;
+
+    font-size: 21px;
+    font-weight: 1000;
+}
+
+
+/* =====================================================
+   BULUNAMADI
+   ===================================================== */
+
+.not-found {
+    background:
+        linear-gradient(
+            135deg,
+            #541414,
+            #b32121
+        );
+
+    border-radius: 20px;
+
+    padding: 28px;
+
+    text-align: center;
+
+    color: white;
+
+    margin-top: 24px;
+
+    box-shadow:
+        0 14px 32px
+        rgba(180,30,30,0.18);
+}
+
+.not-found-title {
+    font-size: 27px;
+    font-weight: 900;
+}
+
+.not-found-number {
+    font-size: 25px;
+    font-weight: 900;
+
+    margin-top: 12px;
+
+    letter-spacing: 2px;
+}
+
+.not-found-stop {
+    background: white;
+
+    color: #9c1d1d;
+
+    border-radius: 10px;
+
+    padding: 12px;
+
+    font-size: 18px;
+    font-weight: 900;
+
+    margin-top: 20px;
+}
+
+
+/* =====================================================
+   FOOTER
+   ===================================================== */
+
+.app-footer {
+    text-align: center;
+
+    color: #8a99a6;
+
+    font-size: 10px;
+
+    letter-spacing: 0.8px;
+
+    margin-top: 40px;
+}
+
+
+/* =====================================================
+   TELEFON
+   ===================================================== */
+
+@media (max-width: 650px) {
 
     .block-container {
-        padding-left: 1rem;
-        padding-right: 1rem;
+        padding-left: 13px;
+        padding-right: 13px;
     }
 
-    .top-panel {
-        padding: 27px 22px;
-        border-radius: 18px;
+    .hero {
+        min-height: 300px;
+
+        padding:
+            25px 22px;
+
+        border-radius: 20px;
     }
 
-    .system-title {
-        font-size: 29px;
+    .hero-content {
+        width: 100%;
     }
 
-    .system-description {
-        font-size: 13px;
+    .hero-title {
+        font-size: 31px;
     }
 
-    .result-container {
+    .hero-visual {
+        width: 180px;
+
+        right: 8px;
+        bottom: 5px;
+
+        opacity: 0.42;
+    }
+
+    .result-number {
         font-size: 28px;
     }
 
@@ -445,8 +846,8 @@ div[data-testid="stMetricValue"] {
         font-size: 25px;
     }
 
-    div[data-testid="stTextInput"] input {
-        font-size: 21px;
+    .danger-title {
+        font-size: 25px;
     }
 }
 
@@ -495,13 +896,19 @@ def clean_value(record, column):
 
     value = str(record[column]).strip()
 
-    if not value:
-        return "-"
-
-    if value.lower() == "nan":
+    if (
+        not value
+        or value.lower() == "nan"
+    ):
         return "-"
 
     return value
+
+
+def safe(value):
+    return html.escape(
+        str(value)
+    )
 
 
 @st.cache_data(ttl=30)
@@ -521,8 +928,9 @@ def load_database(file_name, modified_time):
     df = df.fillna("")
 
     if "CONTAINER" not in df.columns:
+
         raise ValueError(
-            "Excel dosyasında CONTAINER sütunu bulunamadı."
+            "CONTAINER sütunu bulunamadı."
         )
 
     df["_SEARCH"] = (
@@ -534,24 +942,256 @@ def load_database(file_name, modified_time):
 
 
 # =========================================================
-# ÜST PANEL
+# HERO / GÖRSEL
 # =========================================================
 
 st.html("""
-<div class="top-panel">
+<div class="hero">
 
-    <div class="company-name">
-        ALPORT BANJUL
+    <div class="hero-glow-one"></div>
+    <div class="hero-glow-two"></div>
+
+    <div class="hero-content">
+
+        <div class="hero-brand">
+            ALPORT BANJUL
+        </div>
+
+        <div class="hero-title">
+            Konteyner<br>
+            Takip Sistemi
+        </div>
+
+        <div class="hero-subtitle">
+            Gemi yüklemelerinde doğru konteyner,
+            doğru shipping line ve operasyonel
+            güvenlik kontrolü.
+        </div>
+
+        <div class="hero-badge">
+            OPERASYON • KONTEYNER KONTROL
+        </div>
+
     </div>
 
-    <div class="system-title">
-        Konteyner Takip Sistemi
-    </div>
 
-    <div class="system-description">
-        Gemi yüklemelerinde doğru konteyner ve doğru hat kontrolü için
-        operasyon destek sistemi
-    </div>
+    <svg
+        class="hero-visual"
+        viewBox="0 0 500 330"
+        xmlns="http://www.w3.org/2000/svg"
+    >
+
+        <!-- SU -->
+        <path
+            d="M30 285 Q80 270 130 285 T230 285 T330 285 T430 285"
+            fill="none"
+            stroke="#6ED8E8"
+            stroke-width="5"
+            opacity="0.55"
+        />
+
+        <path
+            d="M60 305 Q110 290 160 305 T260 305 T360 305 T460 305"
+            fill="none"
+            stroke="#6ED8E8"
+            stroke-width="3"
+            opacity="0.30"
+        />
+
+
+        <!-- GEMİ -->
+        <path
+            d="
+            M85 205
+            L430 205
+            L395 270
+            L140 270
+            Z
+            "
+            fill="#E8F6FA"
+            opacity="0.96"
+        />
+
+
+        <!-- KÖPRÜ -->
+        <rect
+            x="320"
+            y="145"
+            width="75"
+            height="60"
+            rx="4"
+            fill="#E8F6FA"
+        />
+
+        <rect
+            x="334"
+            y="158"
+            width="15"
+            height="13"
+            fill="#1B6680"
+        />
+
+        <rect
+            x="357"
+            y="158"
+            width="15"
+            height="13"
+            fill="#1B6680"
+        />
+
+
+        <!-- KONTEYNER 1 -->
+        <rect
+            x="125"
+            y="150"
+            width="74"
+            height="52"
+            rx="3"
+            fill="#F05A47"
+        />
+
+        <line
+            x1="143"
+            y1="153"
+            x2="143"
+            y2="199"
+            stroke="#FFAA9E"
+            stroke-width="2"
+        />
+
+        <line
+            x1="161"
+            y1="153"
+            x2="161"
+            y2="199"
+            stroke="#FFAA9E"
+            stroke-width="2"
+        />
+
+        <line
+            x1="179"
+            y1="153"
+            x2="179"
+            y2="199"
+            stroke="#FFAA9E"
+            stroke-width="2"
+        />
+
+
+        <!-- KONTEYNER 2 -->
+        <rect
+            x="203"
+            y="150"
+            width="74"
+            height="52"
+            rx="3"
+            fill="#F4B83A"
+        />
+
+        <line
+            x1="221"
+            y1="153"
+            x2="221"
+            y2="199"
+            stroke="#FFE2A1"
+            stroke-width="2"
+        />
+
+        <line
+            x1="239"
+            y1="153"
+            x2="239"
+            y2="199"
+            stroke="#FFE2A1"
+            stroke-width="2"
+        />
+
+        <line
+            x1="257"
+            y1="153"
+            x2="257"
+            y2="199"
+            stroke="#FFE2A1"
+            stroke-width="2"
+        />
+
+
+        <!-- KONTEYNER 3 -->
+        <rect
+            x="164"
+            y="94"
+            width="74"
+            height="52"
+            rx="3"
+            fill="#26B2AE"
+        />
+
+        <line
+            x1="182"
+            y1="97"
+            x2="182"
+            y2="143"
+            stroke="#8FE7E3"
+            stroke-width="2"
+        />
+
+        <line
+            x1="200"
+            y1="97"
+            x2="200"
+            y2="143"
+            stroke="#8FE7E3"
+            stroke-width="2"
+        />
+
+        <line
+            x1="218"
+            y1="97"
+            x2="218"
+            y2="143"
+            stroke="#8FE7E3"
+            stroke-width="2"
+        />
+
+
+        <!-- VİNÇ -->
+        <line
+            x1="80"
+            y1="70"
+            x2="80"
+            y2="200"
+            stroke="#8FD3E4"
+            stroke-width="8"
+        />
+
+        <line
+            x1="80"
+            y1="72"
+            x2="270"
+            y2="72"
+            stroke="#8FD3E4"
+            stroke-width="7"
+        />
+
+        <line
+            x1="240"
+            y1="72"
+            x2="240"
+            y2="120"
+            stroke="#8FD3E4"
+            stroke-width="3"
+        />
+
+        <rect
+            x="225"
+            y="118"
+            width="30"
+            height="7"
+            rx="2"
+            fill="#F4B83A"
+        />
+
+    </svg>
 
 </div>
 """)
@@ -565,10 +1205,6 @@ if not os.path.exists(EXCEL_FILE):
 
     st.error(
         "Konteyner veri dosyasına ulaşılamıyor."
-    )
-
-    st.info(
-        "Lütfen Operasyon Departmanı ile iletişime geçin."
     )
 
     st.stop()
@@ -591,36 +1227,39 @@ except Exception:
         "Konteyner veritabanı yüklenemedi."
     )
 
-    st.info(
-        "Lütfen Operasyon Departmanı ile iletişime geçin."
-    )
-
     st.stop()
 
 
 update_time = datetime.fromtimestamp(
     modified_time
-).strftime("%d.%m.%Y %H:%M")
+).strftime("%d.%m.%Y • %H:%M")
 
 
 # =========================================================
-# VERİ DURUMU
+# DURUM KARTLARI
 # =========================================================
 
-status1, status2 = st.columns(2)
+stat1, stat2 = st.columns(2)
 
-with status1:
+
+with stat1:
 
     st.html(
         f"""
-        <div class="status-card">
+        <div class="stat-card">
 
-            <div class="status-label">
-                Kayıtlı Konteyner
+            <div class="stat-accent-blue"></div>
+
+            <div class="stat-icon">
+                ▣
             </div>
 
-            <div class="status-value">
-                {len(df):,}
+            <div class="stat-label">
+                Güncel Kayıt
+            </div>
+
+            <div class="stat-value">
+                {len(df):,} Konteyner
             </div>
 
         </div>
@@ -628,17 +1267,23 @@ with status1:
     )
 
 
-with status2:
+with stat2:
 
     st.html(
         f"""
-        <div class="status-card">
+        <div class="stat-card">
 
-            <div class="status-label">
+            <div class="stat-accent-green"></div>
+
+            <div class="stat-icon">
+                ◷
+            </div>
+
+            <div class="stat-label">
                 Son Güncelleme
             </div>
 
-            <div class="status-value">
+            <div class="stat-value">
                 {update_time}
             </div>
 
@@ -654,15 +1299,18 @@ st.write("")
 # ARAMA PANELİ
 # =========================================================
 
-with st.container(border=True):
+with st.container(
+    border=True
+):
 
     st.subheader(
-        "Konteyner Kontrolü"
+        "Konteyner Doğrulama"
     )
 
     st.caption(
-        "Yükleme yapılacak hattı seçin ve konteyner numarasını girin."
+        "Yükleme hattını seçin ve konteyner numarasını girin."
     )
+
 
     available_lines = sorted(
         {
@@ -672,13 +1320,14 @@ with st.container(border=True):
         }
     )
 
+
     line_options = [
         "Hat seçilmedi"
     ] + available_lines
 
 
     with st.form(
-        "container_search_form",
+        "container_search",
         clear_on_submit=False
     ):
 
@@ -694,14 +1343,14 @@ with st.container(border=True):
         )
 
         search_button = st.form_submit_button(
-            "KONTEYNERİ KONTROL ET",
+            "KONTEYNERİ DOĞRULA",
             type="primary",
             use_container_width=True
         )
 
 
 # =========================================================
-# ARAMA
+# ARAMA SONUCU
 # =========================================================
 
 if search_button:
@@ -709,6 +1358,7 @@ if search_button:
     search_number = normalize_container(
         container_input
     )
+
 
     if not search_number:
 
@@ -732,32 +1382,34 @@ if search_button:
 
         st.html(
             f"""
-            <div class="danger-banner">
+            <div class="not-found">
 
-                <div class="danger-title">
+                <div style="
+                    font-size:45px;
+                    margin-bottom:8px;
+                ">
+                    ⓧ
+                </div>
+
+                <div class="not-found-title">
                     KONTEYNER BULUNAMADI
                 </div>
 
+                <div class="not-found-number">
+                    {safe(search_number)}
+                </div>
+
                 <div style="
-                    font-size:26px;
-                    font-weight:800;
-                    color:#172b3b;
+                    color:#ffdede;
                     margin-top:12px;
-                    letter-spacing:2px;
+                    font-size:13px;
                 ">
-                    {search_number}
+                    Bu konteyner güncel veritabanında
+                    bulunmuyor.
                 </div>
 
-                <div class="danger-text">
-                    Bu konteyner güncel veritabanında bulunmamaktadır.
-                </div>
-
-                <div class="do-not-load">
+                <div class="not-found-stop">
                     YÜKLEME YAPMAYIN
-                </div>
-
-                <div class="danger-text">
-                    Yükleme öncesinde Operasyon Departmanı ile teyit edin.
                 </div>
 
             </div>
@@ -766,21 +1418,17 @@ if search_button:
 
 
     # =====================================================
-    # MÜKERRER KAYIT
+    # DUPLICATE
     # =====================================================
 
     elif len(result) > 1:
 
-        st.warning(
-            "Aynı konteyner numarası için birden fazla kayıt bulundu."
-        )
-
-        st.markdown(
-            f"### {search_number}"
-        )
-
         st.error(
-            "YÜKLEME ÖNCESİ OPERASYON DEPARTMANI İLE TEYİT EDİN"
+            "Aynı konteyner için birden fazla kayıt bulundu."
+        )
+
+        st.warning(
+            "Yükleme öncesinde Operasyon Departmanı ile teyit edin."
         )
 
 
@@ -792,10 +1440,12 @@ if search_button:
 
         record = result.iloc[0]
 
+
         container = clean_value(
             record,
             "CONTAINER"
         )
+
 
         shipping_line = normalize_line(
             clean_value(
@@ -804,44 +1454,58 @@ if search_button:
             )
         )
 
+
         size = clean_value(
             record,
             "SIZE"
         )
+
 
         container_type = clean_value(
             record,
             "TYPE"
         )
 
+
         status = clean_value(
             record,
             "FULL-MTY"
         )
+
 
         location = clean_value(
             record,
             "AREA"
         )
 
+
         vessel = clean_value(
             record,
             "VESSEL NAME"
         )
+
 
         voyage = clean_value(
             record,
             "VOYAGE NUMBER"
         )
 
+
         imo_class = clean_value(
             record,
             "IMO CLS"
         )
 
+
         discharge_date = clean_value(
             record,
             "DISCHARGE DATE"
+        )
+
+
+        line_color = LINE_COLORS.get(
+            shipping_line,
+            "#23A6A8"
         )
 
 
@@ -859,49 +1523,37 @@ if search_button:
 
             st.html(
                 f"""
-                <div class="danger-banner">
+                <div class="danger-card">
+
+                    <div class="danger-symbol">
+                        !
+                    </div>
 
                     <div class="danger-title">
-                        YANLIŞ HAT
+                        YANLIŞ SHIPPING LINE
                     </div>
 
-                    <div style="
-                        font-size:27px;
-                        font-weight:800;
-                        color:#172b3b;
-                        margin-top:14px;
-                        letter-spacing:2px;
-                    ">
-                        {container}
+                    <div class="danger-container">
+                        {safe(container)}
                     </div>
 
-                    <div class="danger-text">
-                        Konteynerin kayıtlı hattı:
+                    <div class="danger-info">
+                        KONTEYNERİN KAYITLI HATTI
                     </div>
 
-                    <div style="
-                        font-size:26px;
-                        font-weight:800;
-                        color:#172b3b;
-                        margin-top:3px;
-                    ">
-                        {shipping_line}
+                    <div class="danger-line">
+                        {safe(shipping_line)}
                     </div>
 
-                    <div class="danger-text">
-                        Seçilen yükleme hattı:
+                    <div class="danger-info">
+                        YÜKLEME İÇİN SEÇİLEN HAT
                     </div>
 
-                    <div style="
-                        font-size:23px;
-                        font-weight:800;
-                        color:#172b3b;
-                        margin-top:3px;
-                    ">
-                        {selected_line}
+                    <div class="danger-line">
+                        {safe(selected_line)}
                     </div>
 
-                    <div class="do-not-load">
+                    <div class="danger-stop">
                         BU KONTEYNERİ YÜKLEMEYİN
                     </div>
 
@@ -921,7 +1573,15 @@ if search_button:
                 st.html(
                     """
                     <div class="success-banner">
-                        ✓ Konteyner ve yükleme hattı doğrulandı
+
+                        <div class="success-title">
+                            ✓ Yükleme Kontrolü Başarılı
+                        </div>
+
+                        <div class="success-subtitle">
+                            Konteyner seçilen shipping line ile eşleşiyor.
+                        </div>
+
                     </div>
                     """
                 )
@@ -931,32 +1591,56 @@ if search_button:
                 st.html(
                     """
                     <div class="success-banner">
-                        ✓ Konteyner bulundu
+
+                        <div class="success-title">
+                            ✓ Konteyner Bulundu
+                        </div>
+
+                        <div class="success-subtitle">
+                            Konteyner güncel veritabanında kayıtlı.
+                        </div>
+
                     </div>
                     """
                 )
 
 
+            # =================================================
+            # ANA SONUÇ
+            # =================================================
+
             st.html(
                 f"""
-                <div class="result-card">
+                <div class="container-result">
 
-                    <div class="result-small-label">
+                    <div
+                        class="container-accent"
+                        style="
+                            background:{line_color};
+                        "
+                    ></div>
+
+                    <div class="result-label">
                         KONTEYNER NUMARASI
                     </div>
 
-                    <div class="result-container">
-                        {container}
+                    <div class="result-number">
+                        {safe(container)}
                     </div>
 
-                    <div style="height:20px;"></div>
+                    <div class="result-divider"></div>
 
-                    <div class="result-small-label">
+                    <div class="result-label">
                         SHIPPING LINE
                     </div>
 
-                    <div class="result-line">
-                        {shipping_line}
+                    <div
+                        class="result-line"
+                        style="
+                            color:{line_color};
+                        "
+                    >
+                        {safe(shipping_line)}
                     </div>
 
                 </div>
@@ -965,53 +1649,57 @@ if search_button:
 
 
             # =================================================
-            # DETAYLAR
+            # BİLGİLER
             # =================================================
 
-            col1, col2 = st.columns(2)
+            c1, c2 = st.columns(2)
 
-            with col1:
+            with c1:
                 st.metric(
                     "Boyut",
                     size
                 )
 
-            with col2:
+            with c2:
                 st.metric(
-                    "Tip",
+                    "Konteyner Tipi",
                     container_type
                 )
 
 
-            col3, col4 = st.columns(2)
+            c3, c4 = st.columns(2)
 
-            with col3:
+            with c3:
                 st.metric(
                     "Durum",
                     status
                 )
 
-            with col4:
+            with c4:
                 st.metric(
                     "Saha / Konum",
                     location
                 )
 
 
-            col5, col6 = st.columns(2)
+            c5, c6 = st.columns(2)
 
-            with col5:
+            with c5:
                 st.metric(
                     "Gemi",
                     vessel
                 )
 
-            with col6:
+            with c6:
                 st.metric(
                     "Sefer",
                     voyage
                 )
 
+
+            # =================================================
+            # DETAY
+            # =================================================
 
             if (
                 imo_class != "-"
@@ -1019,7 +1707,7 @@ if search_button:
             ):
 
                 with st.expander(
-                    "Diğer Bilgiler"
+                    "Operasyon Detayları"
                 ):
 
                     if imo_class != "-":
@@ -1028,6 +1716,7 @@ if search_button:
                             "**IMO Sınıfı:**",
                             imo_class
                         )
+
 
                     if discharge_date != "-":
 
@@ -1038,11 +1727,11 @@ if search_button:
 
 
 # =========================================================
-# ALT BÖLÜM
+# FOOTER
 # =========================================================
 
 st.html("""
-<div class="footer-text">
-    ALPORT BANJUL • KONTEYNER TAKİP SİSTEMİ • OPERASYON DEPARTMANI
+<div class="app-footer">
+    ALPORT BANJUL • KONTEYNER TAKİP SİSTEMİ • OPERASYON
 </div>
 """)
