@@ -3,7 +3,7 @@ import re
 import io
 import html
 import difflib
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pandas as pd
 import streamlit as st
@@ -94,6 +94,9 @@ if "container_query" not in st.session_state:
 
 if "language" not in st.session_state:
     st.session_state.language = "tr"
+
+if "toast_message" not in st.session_state:
+    st.session_state.toast_message = None
 
 
 # =========================================================
@@ -221,6 +224,14 @@ TRANSLATIONS = {
         "gate_saved": "✓ Kapı çıkışı kaydedildi:",
         "recent_gate_exits": "Son Kapı Çıkışları",
         "no_gate_exits_yet": "Henüz kayıtlı kapı çıkışı yok.",
+        "empty_gate_sub": "İlk çıkışı yukarıdaki formdan kaydedebilirsin.",
+        "empty_load_sub": "İlk yüklemeyi yukarıdaki formdan kaydedebilirsin.",
+        "trend_title": "📈 Günlük Hareket Trendi",
+        "trend_range_7": "7 Gün",
+        "trend_range_14": "14 Gün",
+        "trend_range_30": "30 Gün",
+        "trend_empty": "Henüz grafik oluşturacak kadar hareket kaydı yok.",
+        "trend_empty_sub": "Kapı çıkışı veya gemiye yükleme kaydettikçe burada trend görünecek.",
         "undo_last": "↺ Son Kaydı Geri Al",
         "undo_help": "Yanlışlıkla eklenen son hareket kaydını siler (tüm hareket türleri için geçerlidir).",
         "undone": "Geri alındı:",
@@ -376,6 +387,14 @@ TRANSLATIONS = {
         "gate_saved": "✓ Gate exit recorded:",
         "recent_gate_exits": "Recent Gate Exits",
         "no_gate_exits_yet": "No gate exits recorded yet.",
+        "empty_gate_sub": "You can record the first exit using the form above.",
+        "empty_load_sub": "You can record the first loading using the form above.",
+        "trend_title": "📈 Daily Movement Trend",
+        "trend_range_7": "7 Days",
+        "trend_range_14": "14 Days",
+        "trend_range_30": "30 Days",
+        "trend_empty": "Not enough movement records yet to build a chart.",
+        "trend_empty_sub": "The trend will appear here as you record gate exits or vessel loadings.",
         "undo_last": "↺ Undo Last Entry",
         "undo_help": "Deletes the most recently added movement record (applies to all movement types).",
         "undone": "Undone:",
@@ -964,6 +983,53 @@ div[data-testid="stMetricValue"] {
 
 
 /* =====================================================
+   BOŞ DURUM İLLÜSTRASYONU
+   ===================================================== */
+
+.empty-state {
+    text-align: center;
+    padding: 34px 20px 28px 20px;
+}
+
+.empty-state-icon {
+    font-size: 38px;
+    margin-bottom: 10px;
+    opacity: 0.55;
+    filter: grayscale(20%);
+}
+
+.empty-state-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink-soft);
+}
+
+.empty-state-sub {
+    font-size: 11.5px;
+    margin-top: 4px;
+    color: var(--ink-soft);
+    opacity: 0.75;
+}
+
+
+/* =====================================================
+   HAT (SHIPPING LINE) ROZETİ
+   ===================================================== */
+
+.line-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 11px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+
+/* =====================================================
    ANA SAYFA DASHBOARD
    ===================================================== */
 
@@ -1213,6 +1279,33 @@ def normalize_line(value):
     return LINE_MAP.get(value, value)
 
 
+def hex_to_rgba(hex_color, alpha=0.14):
+    """Hex renk kodunu, rozet arka planı için soluk bir rgba() değerine çevirir."""
+
+    hex_color = hex_color.lstrip("#")
+    if len(hex_color) != 6:
+        return f"rgba(15,42,68,{alpha})"
+    r = int(hex_color[0:2], 16)
+    g = int(hex_color[2:4], 16)
+    b = int(hex_color[4:6], 16)
+    return f"rgba({r},{g},{b},{alpha})"
+
+
+def line_badge_html(shipping_line):
+    """Shipping line adı için renkli, markaya özel küçük bir rozet üretir."""
+
+    if not shipping_line or shipping_line == "-":
+        return ""
+
+    color = LINE_COLORS.get(shipping_line, "#A6821E")
+    bg = hex_to_rgba(color, 0.13)
+
+    return (
+        f'<span class="line-badge" style="background:{bg}; color:{color};">'
+        f'⚓ {safe(shipping_line)}</span>'
+    )
+
+
 def clean_value(record, column):
     if column not in record.index:
         return "-"
@@ -1408,6 +1501,34 @@ def compute_yard_dashboard(remaining_df):
         "other_count": other_count,
         "total_count": len(work),
     }
+
+
+def compute_daily_trend(movements, days=14):
+    """Son N gün için günlük kapı çıkışı / gemiye yükleme adetlerini
+    grafikte kullanılabilecek bir DataFrame olarak döndürür."""
+
+    end_date = datetime.now().date()
+    date_index = pd.date_range(end=end_date, periods=days).date
+
+    gate_label = t("movement_gate")
+    load_label = t("movement_load")
+
+    if movements.empty:
+        return pd.DataFrame({gate_label: [0] * days, load_label: [0] * days}, index=date_index)
+
+    dated = movements_with_parsed_date(movements)
+    dated = dated.dropna(subset=["TARIH_DT"])
+    dated["DATE_ONLY"] = dated["TARIH_DT"].dt.date
+
+    gate_counts = dated[dated["HAREKET"] == "Kapı Çıkışı"].groupby("DATE_ONLY").size()
+    load_counts = dated[dated["HAREKET"] == "Gemiye Yükleme"].groupby("DATE_ONLY").size()
+
+    trend = pd.DataFrame({
+        gate_label: [int(gate_counts.get(d, 0)) for d in date_index],
+        load_label: [int(load_counts.get(d, 0)) for d in date_index],
+    }, index=date_index)
+
+    return trend
 
 
 def lookup_container(df, raw_number):
@@ -1651,6 +1772,12 @@ def apply_ocr_guess(value):
     st.session_state.container_query = value
 
 
+# Bir önceki işlemden (kayıt/geri alma) bekleyen toast bildirimi varsa göster
+if st.session_state.toast_message:
+    st.toast(st.session_state.toast_message, icon="✅")
+    st.session_state.toast_message = None
+
+
 # =========================================================
 # ÜST ARAÇ ÇUBUĞU
 # =========================================================
@@ -1862,6 +1989,39 @@ st.html(f"""
 
 if _dash['other_count'] > 0:
     st.caption(f"ℹ {_dash['other_count']} {t('dash_other_note')}")
+
+st.write("")
+
+# -------------------------------------------------
+# GÜNLÜK HAREKET TRENDİ
+# -------------------------------------------------
+
+st.markdown(f"**{t('trend_title')}**")
+
+trend_range_options = {7: t("trend_range_7"), 14: t("trend_range_14"), 30: t("trend_range_30")}
+
+trend_days = st.radio(
+    t("trend_title"),
+    options=list(trend_range_options.keys()),
+    format_func=lambda x: trend_range_options[x],
+    index=1,
+    horizontal=True,
+    key="trend_range_select",
+    label_visibility="collapsed"
+)
+
+_trend_df = compute_daily_trend(_movements_for_dashboard, days=trend_days)
+
+if _trend_df.to_numpy().sum() == 0:
+    st.html(f"""
+        <div class="empty-state">
+            <div class="empty-state-icon">📈</div>
+            <div class="empty-state-title">{t('trend_empty')}</div>
+            <div class="empty-state-sub">{t('trend_empty_sub')}</div>
+        </div>
+    """)
+else:
+    st.bar_chart(_trend_df, use_container_width=True, height=220)
 
 st.write("")
 
@@ -2119,6 +2279,7 @@ with tab_single:
                         <div class="result-divider"></div>
                         <div class="result-label">{t('shipping_line_label')}</div>
                         <div class="result-line" style="color:{line_color};">{safe(shipping_line)}</div>
+                        <div style="margin-top:10px;">{line_badge_html(shipping_line)}</div>
                     </div>
                 """)
 
@@ -2230,10 +2391,12 @@ with tab_batch:
                             "detail": t("batch_wrong_line", line=shipping_line, selected=batch_line)
                         })
                     else:
+                        vessel_text = f" • {safe(vessel)}" if vessel != "-" else ""
                         rows.append({
                             "number": normalized,
                             "status": "ok",
-                            "detail": f"{shipping_line} • {vessel}" if vessel != "-" else shipping_line
+                            "detail": f"{shipping_line} • {vessel}" if vessel != "-" else shipping_line,
+                            "detail_html": f"{line_badge_html(shipping_line)}{vessel_text}"
                         })
 
                 push_history(normalized, status)
@@ -2266,12 +2429,13 @@ with tab_batch:
 
         for row in rows:
             icon, css_class = icon_map.get(row["status"], ("?", "batch-row-warn"))
+            detail_content = row.get("detail_html") or safe(row['detail'])
 
             st.html(f"""
                 <div class="batch-row {css_class}" role="listitem">
                     <div class="batch-icon">{icon}</div>
                     <div class="batch-number">{safe(row['number'])}</div>
-                    <div class="batch-detail">{safe(row['detail'])}</div>
+                    <div class="batch-detail">{detail_content}</div>
                 </div>
             """)
 
@@ -2404,7 +2568,7 @@ with tab_gate:
             else:
                 gate_timestamp = f"{gate_date_val.strftime('%d.%m.%Y')} {gate_time_val.strftime('%H:%M')}"
                 save_movement(gate_normalized, "Kapı Çıkışı", gate_note, movement_datetime=gate_timestamp)
-                st.success(f"{t('gate_saved')} {gate_normalized} — {gate_timestamp}")
+                st.session_state.toast_message = f"{t('gate_saved')} {gate_normalized} — {gate_timestamp}"
                 st.rerun()
 
     st.write("")
@@ -2416,7 +2580,13 @@ with tab_gate:
     with st.expander(f"{t('recent_gate_exits')} ({len(gate_out_all)} {t('record_count_suffix')})", expanded=False):
 
         if gate_out_all.empty:
-            st.caption(t("no_gate_exits_yet"))
+            st.html(f"""
+                <div class="empty-state">
+                    <div class="empty-state-icon">🚪</div>
+                    <div class="empty-state-title">{t('no_gate_exits_yet')}</div>
+                    <div class="empty-state-sub">{t('empty_gate_sub')}</div>
+                </div>
+            """)
         else:
             recent_gate = gate_out_all.iloc[::-1].head(20)
             st.dataframe(localize_movements_display(recent_gate), use_container_width=True, hide_index=True)
@@ -2430,7 +2600,7 @@ with tab_gate:
             if undo_gate_clicked:
                 undone = undo_last_movement()
                 if undone:
-                    st.success(f"{t('undone')} {undone['KONTEYNER']} — {movement_label(undone['HAREKET'])}")
+                    st.session_state.toast_message = f"{t('undone')} {undone['KONTEYNER']} — {movement_label(undone['HAREKET'])}"
                     st.rerun()
 
     # -------------------------------------------------
@@ -2613,7 +2783,7 @@ with tab_load:
             else:
                 load_timestamp = f"{load_date_val.strftime('%d.%m.%Y')} {load_time_val.strftime('%H:%M')}"
                 save_movement(load_normalized, "Gemiye Yükleme", load_note, movement_datetime=load_timestamp)
-                st.success(f"{t('load_saved')} {load_normalized} — {load_timestamp}")
+                st.session_state.toast_message = f"{t('load_saved')} {load_normalized} — {load_timestamp}"
                 st.rerun()
 
     st.write("")
@@ -2625,7 +2795,13 @@ with tab_load:
     with st.expander(f"{t('recent_loads')} ({len(load_all)} {t('record_count_suffix')})", expanded=False):
 
         if load_all.empty:
-            st.caption(t("no_loads_yet"))
+            st.html(f"""
+                <div class="empty-state">
+                    <div class="empty-state-icon">🚢</div>
+                    <div class="empty-state-title">{t('no_loads_yet')}</div>
+                    <div class="empty-state-sub">{t('empty_load_sub')}</div>
+                </div>
+            """)
         else:
             recent_load = load_all.iloc[::-1].head(20)
             st.dataframe(localize_movements_display(recent_load), use_container_width=True, hide_index=True)
@@ -2639,7 +2815,7 @@ with tab_load:
             if undo_load_clicked:
                 undone = undo_last_movement()
                 if undone:
-                    st.success(f"{t('undone')} {undone['KONTEYNER']} — {movement_label(undone['HAREKET'])}")
+                    st.session_state.toast_message = f"{t('undone')} {undone['KONTEYNER']} — {movement_label(undone['HAREKET'])}"
                     st.rerun()
 
     # -------------------------------------------------
