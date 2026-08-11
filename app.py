@@ -599,6 +599,112 @@ div[data-testid="stMetricValue"] {
 
 
 /* =====================================================
+   ANA SAYFA DASHBOARD
+   ===================================================== */
+
+.dashboard-section {
+    margin-bottom: 24px;
+}
+
+.dashboard-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.dashboard-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--navy);
+    letter-spacing: 0.2px;
+}
+
+.dashboard-subtitle {
+    font-size: 11.5px;
+    color: var(--ink-soft);
+}
+
+.dash-card {
+    position: relative;
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    min-height: 88px;
+    box-shadow: 0 2px 8px rgba(15,42,68,0.04);
+}
+
+.dash-card-accent {
+    position: absolute; top: 0; left: 0;
+    width: 4px; height: 100%;
+}
+
+.dash-icon { font-size: 16px; margin-bottom: 5px; }
+
+.dash-label {
+    color: var(--ink-soft);
+    font-size: 9.5px; font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.dash-value {
+    color: var(--navy);
+    font-size: 22px; font-weight: 800;
+    margin-top: 3px;
+}
+
+.dash-teu-card {
+    background: linear-gradient(135deg, var(--navy-deep), var(--navy));
+    border: none;
+}
+
+.dash-teu-card .dash-label { color: #B7C6D4; }
+.dash-teu-card .dash-value { color: #FFFFFF; }
+.dash-teu-card .dash-icon { color: var(--gold-soft); }
+
+.composition-bar {
+    display: flex;
+    width: 100%;
+    height: 14px;
+    border-radius: 30px;
+    overflow: hidden;
+    margin-top: 16px;
+    background: var(--border);
+}
+
+.composition-segment {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.composition-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 10px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-soft);
+}
+
+.legend-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+
+/* =====================================================
    TOPLU DOĞRULAMA SATIRLARI
    ===================================================== */
 
@@ -795,15 +901,19 @@ def load_movements():
         return pd.DataFrame(columns=MOVEMENT_COLUMNS)
 
 
-def save_movement(container_number, hareket_tipi, note=""):
-    """Yeni bir çıkış/yükleme hareketi ekler ve CSV'ye kaydeder."""
+def save_movement(container_number, hareket_tipi, note="", movement_datetime=None):
+    """Yeni bir çıkış/yükleme hareketi ekler ve CSV'ye kaydeder.
+    movement_datetime verilmezse şu anki tarih/saat kullanılır; verilirse
+    (ör. geçmiş bir tarihe kayıt girmek için) o tarih/saat kaydedilir."""
 
     movements = load_movements()
+
+    timestamp = movement_datetime if movement_datetime else datetime.now().strftime("%d.%m.%Y %H:%M")
 
     new_row = pd.DataFrame([{
         "KONTEYNER": container_number,
         "HAREKET": hareket_tipi,
-        "TARIH": datetime.now().strftime("%d.%m.%Y %H:%M"),
+        "TARIH": timestamp,
         "NOT": note
     }])
 
@@ -866,6 +976,73 @@ def build_excel_bytes(export_df, sheet_name="Rapor"):
     with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
         export_df.to_excel(writer, index=False, sheet_name=sheet_name[:31])
     return buffer.getvalue()
+
+
+def classify_size(size_value):
+    """SIZE sütunundaki değerden 20 ya da 40 ayak sınıfını tespit eder
+    (örn. '20', '20DV', "20'", 'GP20' gibi farklı yazımları destekler)."""
+
+    if not size_value or size_value == "-":
+        return None
+    match = re.search(r"(20|40|45)", str(size_value))
+    return match.group(1) if match else None
+
+
+def classify_full_empty(status_value):
+    """FULL-MTY sütunundaki değerden dolu/boş durumunu tespit eder
+    (FULL/DOLU/F veya MTY/EMPTY/BOŞ/E gibi farklı yazımları destekler)."""
+
+    if not status_value or status_value == "-":
+        return None
+    v = str(status_value).upper().strip()
+    if v in ("E", "EMP") or "MT" in v or "EMP" in v or "BOŞ" in v or "BOS" in v:
+        return "EMPTY"
+    if v == "F" or "FUL" in v or "DOLU" in v:
+        return "FULL"
+    return None
+
+
+def compute_teu(size_value):
+    """Konteynerin TEU (Twenty-foot Equivalent Unit) katkısını hesaplar."""
+
+    if not size_value or size_value == "-":
+        return 1.0
+    match = re.search(r"(\d+)", str(size_value))
+    if not match:
+        return 1.0
+    feet = int(match.group(1))
+    return round(feet / 20, 2)
+
+
+def compute_yard_dashboard(remaining_df):
+    """Limanda kalan konteynerlerin boyut/durum dağılımını ve toplam TEU'sunu hesaplar."""
+
+    work = remaining_df.copy()
+
+    size_col = work["SIZE"] if "SIZE" in work.columns else pd.Series([""] * len(work))
+    status_col = work["FULL-MTY"] if "FULL-MTY" in work.columns else pd.Series([""] * len(work))
+
+    work["_SIZE_CLASS"] = size_col.apply(classify_size)
+    work["_STATUS_CLASS"] = status_col.apply(classify_full_empty)
+    work["_TEU"] = size_col.apply(compute_teu)
+
+    dolu_20 = int(((work["_SIZE_CLASS"] == "20") & (work["_STATUS_CLASS"] == "FULL")).sum())
+    bos_20 = int(((work["_SIZE_CLASS"] == "20") & (work["_STATUS_CLASS"] == "EMPTY")).sum())
+    dolu_40 = int(((work["_SIZE_CLASS"].isin(["40", "45"])) & (work["_STATUS_CLASS"] == "FULL")).sum())
+    bos_40 = int(((work["_SIZE_CLASS"].isin(["40", "45"])) & (work["_STATUS_CLASS"] == "EMPTY")).sum())
+    total_teu = round(work["_TEU"].sum(), 1)
+    classified_total = dolu_20 + bos_20 + dolu_40 + bos_40
+    other_count = len(work) - classified_total
+
+    return {
+        "dolu_20": dolu_20,
+        "bos_20": bos_20,
+        "dolu_40": dolu_40,
+        "bos_40": bos_40,
+        "total_teu": total_teu,
+        "other_count": other_count,
+        "total_count": len(work),
+    }
 
 
 def lookup_container(df, raw_number):
@@ -1211,6 +1388,107 @@ with stat2:
             <div class="stat-value">{update_time}</div>
         </div>
     """)
+
+st.write("")
+
+
+# =========================================================
+# ANA SAYFA DASHBOARD — Liman Envanter Panosu
+# =========================================================
+
+_movements_for_dashboard = load_movements()
+_moved_out_for_dashboard = get_moved_out_numbers(_movements_for_dashboard)
+_remaining_for_dashboard = df[~df["_SEARCH"].isin(_moved_out_for_dashboard)]
+_dash = compute_yard_dashboard(_remaining_for_dashboard)
+
+st.html("""
+<div class="dashboard-header">
+    <div class="dashboard-title">📊 Liman Envanter Panosu</div>
+    <div class="dashboard-subtitle">Şu an sahada bulunan konteynerlerin dağılımı</div>
+</div>
+""")
+
+d1, d2, d3, d4, d5 = st.columns(5)
+
+with d1:
+    st.html(f"""
+        <div class="dash-card">
+            <div class="dash-card-accent" style="background:{LINE_COLORS.get('OBT', '#1F6E4A')};"></div>
+            <div class="dash-icon">📦</div>
+            <div class="dash-label">Dolu 20'</div>
+            <div class="dash-value">{_dash['dolu_20']:,}</div>
+        </div>
+    """)
+
+with d2:
+    st.html(f"""
+        <div class="dash-card">
+            <div class="dash-card-accent" style="background:#9CA8B4;"></div>
+            <div class="dash-icon">📭</div>
+            <div class="dash-label">Boş 20'</div>
+            <div class="dash-value">{_dash['bos_20']:,}</div>
+        </div>
+    """)
+
+with d3:
+    st.html(f"""
+        <div class="dash-card">
+            <div class="dash-card-accent" style="background:var(--navy);"></div>
+            <div class="dash-icon">📦</div>
+            <div class="dash-label">Dolu 40'</div>
+            <div class="dash-value">{_dash['dolu_40']:,}</div>
+        </div>
+    """)
+
+with d4:
+    st.html(f"""
+        <div class="dash-card">
+            <div class="dash-card-accent" style="background:#C7CFD8;"></div>
+            <div class="dash-icon">📭</div>
+            <div class="dash-label">Boş 40'</div>
+            <div class="dash-value">{_dash['bos_40']:,}</div>
+        </div>
+    """)
+
+with d5:
+    st.html(f"""
+        <div class="dash-card dash-teu-card">
+            <div class="dash-icon">⚓</div>
+            <div class="dash-label">Toplam TEU</div>
+            <div class="dash-value">{_dash['total_teu']:,.1f}</div>
+        </div>
+    """)
+
+# Kompozisyon çubuğu (oransal görsel özet)
+_dash_total = max(_dash['total_count'], 1)
+_seg_dolu20 = _dash['dolu_20'] / _dash_total * 100
+_seg_bos20 = _dash['bos_20'] / _dash_total * 100
+_seg_dolu40 = _dash['dolu_40'] / _dash_total * 100
+_seg_bos40 = _dash['bos_40'] / _dash_total * 100
+_seg_other = _dash['other_count'] / _dash_total * 100
+
+st.html(f"""
+    <div class="composition-bar">
+        <div class="composition-segment" style="width:{_seg_dolu20}%; background:#1F6E4A;"></div>
+        <div class="composition-segment" style="width:{_seg_bos20}%; background:#9CA8B4;"></div>
+        <div class="composition-segment" style="width:{_seg_dolu40}%; background:#0F2A44;"></div>
+        <div class="composition-segment" style="width:{_seg_bos40}%; background:#C7CFD8;"></div>
+        <div class="composition-segment" style="width:{_seg_other}%; background:#D4A72C;"></div>
+    </div>
+    <div class="composition-legend">
+        <div class="legend-item"><span class="legend-dot" style="background:#1F6E4A;"></span> Dolu 20'</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#9CA8B4;"></span> Boş 20'</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#0F2A44;"></span> Dolu 40'</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#C7CFD8;"></span> Boş 40'</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#D4A72C;"></span> Diğer / Sınıflandırılamayan</div>
+    </div>
+""")
+
+if _dash['other_count'] > 0:
+    st.caption(
+        f"ℹ {_dash['other_count']} konteyner boyut (SIZE) veya durum (FULL-MTY) bilgisi eksik/tanınmayan "
+        "bir formatta olduğu için yukarıdaki 20'/40' dağılımına dahil edilemedi, ancak toplam TEU hesabına dahildir."
+    )
 
 st.write("")
 
@@ -1718,6 +1996,22 @@ with tab_gate:
                 key="gate_note_input"
             )
 
+        gd1, gd2 = st.columns(2)
+
+        with gd1:
+            gate_date_val = st.date_input(
+                "Çıkış Tarihi",
+                value=datetime.now().date(),
+                key="gate_date_input"
+            )
+
+        with gd2:
+            gate_time_val = st.time_input(
+                "Çıkış Saati",
+                value=datetime.now().time().replace(second=0, microsecond=0),
+                key="gate_time_input"
+            )
+
         gate_normalized = normalize_container(gate_container_input)
 
         if gate_normalized:
@@ -1749,8 +2043,9 @@ with tab_gate:
             if not gate_normalized:
                 st.warning("Lütfen konteyner numarası girin.")
             else:
-                save_movement(gate_normalized, "Kapı Çıkışı", gate_note)
-                st.success(f"✓ Kapı çıkışı kaydedildi: {gate_normalized}")
+                gate_timestamp = f"{gate_date_val.strftime('%d.%m.%Y')} {gate_time_val.strftime('%H:%M')}"
+                save_movement(gate_normalized, "Kapı Çıkışı", gate_note, movement_datetime=gate_timestamp)
+                st.success(f"✓ Kapı çıkışı kaydedildi: {gate_normalized} — {gate_timestamp}")
                 st.rerun()
 
     st.write("")
@@ -1914,6 +2209,22 @@ with tab_load:
                 key="load_note_input"
             )
 
+        ld1, ld2 = st.columns(2)
+
+        with ld1:
+            load_date_val = st.date_input(
+                "Yükleme Tarihi",
+                value=datetime.now().date(),
+                key="load_date_input"
+            )
+
+        with ld2:
+            load_time_val = st.time_input(
+                "Yükleme Saati",
+                value=datetime.now().time().replace(second=0, microsecond=0),
+                key="load_time_input"
+            )
+
         load_normalized = normalize_container(load_container_input)
 
         if load_normalized:
@@ -1945,8 +2256,9 @@ with tab_load:
             if not load_normalized:
                 st.warning("Lütfen konteyner numarası girin.")
             else:
-                save_movement(load_normalized, "Gemiye Yükleme", load_note)
-                st.success(f"✓ Gemiye yükleme kaydedildi: {load_normalized}")
+                load_timestamp = f"{load_date_val.strftime('%d.%m.%Y')} {load_time_val.strftime('%H:%M')}"
+                save_movement(load_normalized, "Gemiye Yükleme", load_note, movement_datetime=load_timestamp)
+                st.success(f"✓ Gemiye yükleme kaydedildi: {load_normalized} — {load_timestamp}")
                 st.rerun()
 
     st.write("")
