@@ -159,6 +159,11 @@ TRANSLATIONS = {
         "system_status_module": "MODÜL",
         "system_status_ops": "LİMAN OPERASYONLARI",
         "system_status_refresh": "SON YENİLEME",
+        "gauge_title": "Doluluk Oranı",
+        "gauge_full_label": "DOLU",
+        "gauge_filled_row": "Dolu Konteyner",
+        "gauge_empty_row": "Boş Konteyner",
+        "gauge_teu_row": "Toplam TEU",
 
         "hero_brand": "LİMAN OPERASYONLARI",
         "hero_title": "Konteyner Takip ve Doğrulama Sistemi",
@@ -415,6 +420,11 @@ TRANSLATIONS = {
         "system_status_module": "MODULE",
         "system_status_ops": "PORT OPERATIONS",
         "system_status_refresh": "LAST REFRESH",
+        "gauge_title": "Occupancy Rate",
+        "gauge_full_label": "FULL",
+        "gauge_filled_row": "Full Containers",
+        "gauge_empty_row": "Empty Containers",
+        "gauge_teu_row": "Total TEU",
 
         "hero_brand": "PORT OPERATIONS",
         "hero_title": "Container Tracking & Verification System",
@@ -748,6 +758,100 @@ header { visibility: hidden; }
 
 .status-divider {
     color: rgba(184,134,11,0.4);
+}
+
+
+/* =====================================================
+   İKON ROZETİ (renkli daire içinde ikon)
+   ===================================================== */
+
+.icon-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    font-size: 16px;
+    margin-bottom: 8px;
+}
+
+.icon-badge-navy { background: rgba(15,42,68,0.09); color: var(--navy); }
+.icon-badge-gold { background: rgba(184,134,11,0.12); color: var(--gold); }
+.icon-badge-green { background: rgba(21,115,71,0.10); color: var(--verified); }
+.icon-badge-grey { background: rgba(107,114,128,0.10); color: var(--ink-soft); }
+.icon-badge-alert { background: rgba(185,28,28,0.09); color: var(--alert); }
+
+
+/* =====================================================
+   DOLULUK GÖSTERGESİ (RADIAL GAUGE)
+   ===================================================== */
+
+.gauge-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(15,42,68,0.04);
+    display: flex;
+    align-items: center;
+    gap: 22px;
+}
+
+.gauge-svg-wrap {
+    position: relative;
+    flex-shrink: 0;
+    width: 108px;
+    height: 108px;
+}
+
+.gauge-percent {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 800;
+    color: var(--navy);
+    font-size: 20px;
+    line-height: 1.1;
+}
+
+.gauge-percent-label {
+    font-size: 8.5px;
+    color: var(--ink-soft);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.gauge-legend {
+    flex: 1;
+}
+
+.gauge-title {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--navy);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+}
+
+.gauge-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    padding: 3px 0;
+}
+
+.gauge-row-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    color: var(--navy);
 }
 
 
@@ -2101,6 +2205,27 @@ def compute_yard_dashboard(remaining_df):
     }
 
 
+def build_occupancy_gauge_svg(percent, size=108, stroke=12):
+    """Doluluk oranını (dolu / (dolu+boş)) gösteren dairesel bir SVG gösterge üretir."""
+
+    radius = (size - stroke) / 2
+    circumference = 2 * 3.14159265 * radius
+    filled_length = (percent / 100) * circumference
+    remaining_length = circumference - filled_length
+
+    return f"""
+    <svg viewBox="0 0 {size} {size}" width="{size}" height="{size}">
+        <circle cx="{size/2}" cy="{size/2}" r="{radius}" fill="none"
+                stroke="#E1E6EB" stroke-width="{stroke}" />
+        <circle cx="{size/2}" cy="{size/2}" r="{radius}" fill="none"
+                stroke="#0F2A44" stroke-width="{stroke}"
+                stroke-dasharray="{filled_length:.2f} {remaining_length:.2f}"
+                stroke-linecap="round"
+                transform="rotate(-90 {size/2} {size/2})" />
+    </svg>
+    """
+
+
 def compute_line_breakdown(remaining_df):
     """Limanda kalan konteynerlerin shipping line (hat) bazında dolu/boş
     20'/40' kırılımını hesaplar — ALPORT'un elle tuttuğu 'CONTAINER STOCK
@@ -2847,7 +2972,7 @@ with d1:
     st.html(f"""
         <div class="dash-card">
             <div class="dash-card-accent" style="background:{LINE_COLORS.get('OBT', '#1F6E4A')};"></div>
-            <div class="dash-icon">📦</div>
+            <div class="icon-badge icon-badge-green">📦</div>
             <div class="dash-label">{t('dash_full_20')}</div>
             <div class="dash-value">{_dash['dolu_20']:,}</div>
         </div>
@@ -2857,7 +2982,7 @@ with d2:
     st.html(f"""
         <div class="dash-card">
             <div class="dash-card-accent" style="background:#9CA8B4;"></div>
-            <div class="dash-icon">📭</div>
+            <div class="icon-badge icon-badge-grey">📭</div>
             <div class="dash-label">{t('dash_empty_20')}</div>
             <div class="dash-value">{_dash['bos_20']:,}</div>
         </div>
@@ -2867,7 +2992,7 @@ with d3:
     st.html(f"""
         <div class="dash-card">
             <div class="dash-card-accent" style="background:var(--navy);"></div>
-            <div class="dash-icon">📦</div>
+            <div class="icon-badge icon-badge-navy">📦</div>
             <div class="dash-label">{t('dash_full_40')}</div>
             <div class="dash-value">{_dash['dolu_40']:,}</div>
         </div>
@@ -2877,7 +3002,7 @@ with d4:
     st.html(f"""
         <div class="dash-card">
             <div class="dash-card-accent" style="background:#C7CFD8;"></div>
-            <div class="dash-icon">📭</div>
+            <div class="icon-badge icon-badge-grey">📭</div>
             <div class="dash-label">{t('dash_empty_40')}</div>
             <div class="dash-value">{_dash['bos_40']:,}</div>
         </div>
@@ -2886,11 +3011,53 @@ with d4:
 with d5:
     st.html(f"""
         <div class="dash-card dash-teu-card">
-            <div class="dash-icon">⚓</div>
+            <div class="icon-badge icon-badge-gold">⚓</div>
             <div class="dash-label">{t('dash_total_teu')}</div>
             <div class="dash-value">{_dash['total_teu']:,.1f}</div>
         </div>
     """)
+
+st.write("")
+
+# -------------------------------------------------
+# DOLULUK GÖSTERGESİ (RADIAL GAUGE)
+# -------------------------------------------------
+
+_classified_total = _dash['dolu_20'] + _dash['bos_20'] + _dash['dolu_40'] + _dash['bos_40']
+_filled_total = _dash['dolu_20'] + _dash['dolu_40']
+_empty_total = _dash['bos_20'] + _dash['bos_40']
+_occupancy_percent = round((_filled_total / _classified_total) * 100, 1) if _classified_total > 0 else 0
+
+_gauge_svg = build_occupancy_gauge_svg(_occupancy_percent)
+
+st.html(f"""
+    <div class="gauge-card">
+        <div class="gauge-svg-wrap">
+            {_gauge_svg}
+            <div class="gauge-percent">
+                {_occupancy_percent:.0f}%
+                <div class="gauge-percent-label">{t('gauge_full_label')}</div>
+            </div>
+        </div>
+        <div class="gauge-legend">
+            <div class="gauge-title">{t('gauge_title')}</div>
+            <div class="gauge-row">
+                <span>📦 {t('gauge_filled_row')}</span>
+                <span class="gauge-row-value">{_filled_total:,}</span>
+            </div>
+            <div class="gauge-row">
+                <span>📭 {t('gauge_empty_row')}</span>
+                <span class="gauge-row-value">{_empty_total:,}</span>
+            </div>
+            <div class="gauge-row">
+                <span>⚓ {t('gauge_teu_row')}</span>
+                <span class="gauge-row-value">{_dash['total_teu']:,.1f}</span>
+            </div>
+        </div>
+    </div>
+""")
+
+st.write("")
 
 # Kompozisyon çubuğu (oransal görsel özet)
 _dash_total = max(_dash['total_count'], 1)
