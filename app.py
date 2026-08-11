@@ -232,6 +232,10 @@ TRANSLATIONS = {
         "trend_range_30": "30 Gün",
         "trend_empty": "Henüz grafik oluşturacak kadar hareket kaydı yok.",
         "trend_empty_sub": "Kapı çıkışı veya gemiye yükleme kaydettikçe burada trend görünecek.",
+        "line_breakdown_title": "🚩 Hat Bazlı Envanter Detayı",
+        "line_breakdown_caption": "Şu an sahada bulunan konteynerlerin shipping line bazında dolu/boş 20'/40' kırılımı.",
+        "line_breakdown_empty": "Hat bilgisi (AGENT) eksik olduğu için kırılım hesaplanamadı.",
+        "line_column_label": "Hat",
         "undo_last": "↺ Son Kaydı Geri Al",
         "undo_help": "Yanlışlıkla eklenen son hareket kaydını siler (tüm hareket türleri için geçerlidir).",
         "undone": "Geri alındı:",
@@ -395,6 +399,10 @@ TRANSLATIONS = {
         "trend_range_30": "30 Days",
         "trend_empty": "Not enough movement records yet to build a chart.",
         "trend_empty_sub": "The trend will appear here as you record gate exits or vessel loadings.",
+        "line_breakdown_title": "🚩 Line-by-Line Inventory Breakdown",
+        "line_breakdown_caption": "Full/empty 20'/40' breakdown by shipping line for containers currently in the yard.",
+        "line_breakdown_empty": "Breakdown could not be calculated because line (AGENT) data is missing.",
+        "line_column_label": "Line",
         "undo_last": "↺ Undo Last Entry",
         "undo_help": "Deletes the most recently added movement record (applies to all movement types).",
         "undone": "Undone:",
@@ -1327,7 +1335,19 @@ def is_valid_format(normalized_value):
 
 @st.cache_data(ttl=30)
 def load_database(file_name, modified_time):
-    df = pd.read_excel(file_name, dtype=str, engine="openpyxl")
+    """CONTAINER veritabanını yükler. Dosya tek sekmeli basit bir liste olabilir,
+    ya da ALPORT'un günlük rapor defteri gibi çok sekmeli bir dosya olabilir —
+    bu durumda 'KONTEYNERLER' adlı sekme otomatik olarak seçilir."""
+
+    excel_file = pd.ExcelFile(file_name, engine="openpyxl")
+
+    sheet_to_use = excel_file.sheet_names[0]
+    for candidate in excel_file.sheet_names:
+        if candidate.strip().upper() == "KONTEYNERLER":
+            sheet_to_use = candidate
+            break
+
+    df = excel_file.parse(sheet_to_use, dtype=str)
     df.columns = [str(column).strip().upper() for column in df.columns]
     df = df.fillna("")
 
@@ -1447,15 +1467,17 @@ def classify_size(size_value):
 
 
 def classify_full_empty(status_value):
-    """FULL-MTY sütunundaki değerden dolu/boş durumunu tespit eder
-    (FULL/DOLU/F veya MTY/EMPTY/BOŞ/E gibi farklı yazımları destekler)."""
+    """FULL-MTY sütunundaki değerden dolu/boş durumunu tespit eder.
+    ALPORT'un gerçek verisinde şu kodlar kullanılıyor: FCL/FCLD (dolu — Full
+    Container Load), EMPTY (boş), EXP (export — sahada neredeyse her zaman
+    dolu konteynerdir), ayrıca genel FULL/DOLU/BOŞ/MTY yazımları da desteklenir."""
 
     if not status_value or status_value == "-":
         return None
     v = str(status_value).upper().strip()
     if v in ("E", "EMP") or "MT" in v or "EMP" in v or "BOŞ" in v or "BOS" in v:
         return "EMPTY"
-    if v == "F" or "FUL" in v or "DOLU" in v:
+    if v == "F" or "FUL" in v or "DOLU" in v or v in ("FCL", "FCLD", "EXP"):
         return "FULL"
     return None
 
@@ -1501,6 +1523,50 @@ def compute_yard_dashboard(remaining_df):
         "other_count": other_count,
         "total_count": len(work),
     }
+
+
+def compute_line_breakdown(remaining_df):
+    """Limanda kalan konteynerlerin shipping line (hat) bazında dolu/boş
+    20'/40' kırılımını hesaplar — ALPORT'un elle tuttuğu 'CONTAINER STOCK
+    STATUS' tablosuna benzer bir özet üretir."""
+
+    if remaining_df.empty:
+        return pd.DataFrame()
+
+    work = remaining_df.copy()
+    work["_LINE"] = work["AGENT"].apply(normalize_line) if "AGENT" in work.columns else "-"
+    size_col = work["SIZE"] if "SIZE" in work.columns else pd.Series([""] * len(work))
+    status_col = work["FULL-MTY"] if "FULL-MTY" in work.columns else pd.Series([""] * len(work))
+    work["_SIZE_CLASS"] = size_col.apply(classify_size)
+    work["_STATUS_CLASS"] = status_col.apply(classify_full_empty)
+
+    rows = []
+    for line in sorted(work["_LINE"].unique()):
+        if line == "-":
+            continue
+        line_df = work[work["_LINE"] == line]
+        rows.append({
+            "Hat": line,
+            "Dolu 20'": int(((line_df["_SIZE_CLASS"] == "20") & (line_df["_STATUS_CLASS"] == "FULL")).sum()),
+            "Boş 20'": int(((line_df["_SIZE_CLASS"] == "20") & (line_df["_STATUS_CLASS"] == "EMPTY")).sum()),
+            "Dolu 40'": int(((line_df["_SIZE_CLASS"].isin(["40", "45"])) & (line_df["_STATUS_CLASS"] == "FULL")).sum()),
+            "Boş 40'": int(((line_df["_SIZE_CLASS"].isin(["40", "45"])) & (line_df["_STATUS_CLASS"] == "EMPTY")).sum()),
+            "Toplam": len(line_df),
+        })
+
+    breakdown = pd.DataFrame(rows)
+    if not breakdown.empty:
+        totals = {
+            "Hat": "TOPLAM",
+            "Dolu 20'": breakdown["Dolu 20'"].sum(),
+            "Boş 20'": breakdown["Boş 20'"].sum(),
+            "Dolu 40'": breakdown["Dolu 40'"].sum(),
+            "Boş 40'": breakdown["Boş 40'"].sum(),
+            "Toplam": breakdown["Toplam"].sum(),
+        }
+        breakdown = pd.concat([breakdown, pd.DataFrame([totals])], ignore_index=True)
+
+    return breakdown
 
 
 def compute_daily_trend(movements, days=14):
@@ -2022,6 +2088,36 @@ if _trend_df.to_numpy().sum() == 0:
     """)
 else:
     st.bar_chart(_trend_df, use_container_width=True, height=220)
+
+st.write("")
+
+# -------------------------------------------------
+# HAT BAZLI ENVANTER DETAYI
+# -------------------------------------------------
+
+with st.expander(t("line_breakdown_title"), expanded=False):
+
+    st.caption(t("line_breakdown_caption"))
+
+    _line_breakdown = compute_line_breakdown(_remaining_for_dashboard)
+
+    if _line_breakdown.empty:
+        st.html(f"""
+            <div class="empty-state">
+                <div class="empty-state-icon">🚩</div>
+                <div class="empty-state-title">{t('line_breakdown_empty')}</div>
+            </div>
+        """)
+    else:
+        display_breakdown = _line_breakdown.rename(columns={
+            "Hat": t("line_column_label"),
+            "Dolu 20'": t("dash_full_20"),
+            "Boş 20'": t("dash_empty_20"),
+            "Dolu 40'": t("dash_full_40"),
+            "Boş 40'": t("dash_empty_40"),
+            "Toplam": t("batch_total"),
+        })
+        st.dataframe(display_breakdown, use_container_width=True, hide_index=True)
 
 st.write("")
 
