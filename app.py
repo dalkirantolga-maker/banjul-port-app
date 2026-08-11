@@ -30,6 +30,7 @@ st.set_page_config(
 )
 
 EXCEL_FILE = "containers.xlsx"
+MOVEMENTS_FILE = "hareketler.csv"
 MAX_HISTORY = 6
 
 # ALPORT Banjul logosu (base64 gömülü — ayrı dosya taşımaya gerek yok)
@@ -774,6 +775,64 @@ def load_database(file_name, modified_time):
     return df
 
 
+MOVEMENT_COLUMNS = ["KONTEYNER", "HAREKET", "TARIH", "NOT"]
+
+
+def load_movements():
+    """Kapı çıkışı / gemiye yükleme hareket kayıtlarını CSV'den okur.
+    Dosya yoksa boş bir tablo döndürür."""
+
+    if not os.path.exists(MOVEMENTS_FILE):
+        return pd.DataFrame(columns=MOVEMENT_COLUMNS)
+
+    try:
+        movements = pd.read_csv(MOVEMENTS_FILE, dtype=str)
+        for col in MOVEMENT_COLUMNS:
+            if col not in movements.columns:
+                movements[col] = ""
+        return movements.fillna("")[MOVEMENT_COLUMNS]
+    except Exception:
+        return pd.DataFrame(columns=MOVEMENT_COLUMNS)
+
+
+def save_movement(container_number, hareket_tipi, note=""):
+    """Yeni bir çıkış/yükleme hareketi ekler ve CSV'ye kaydeder."""
+
+    movements = load_movements()
+
+    new_row = pd.DataFrame([{
+        "KONTEYNER": container_number,
+        "HAREKET": hareket_tipi,
+        "TARIH": datetime.now().strftime("%d.%m.%Y %H:%M"),
+        "NOT": note
+    }])
+
+    movements = pd.concat([movements, new_row], ignore_index=True)
+    movements.to_csv(MOVEMENTS_FILE, index=False)
+
+
+def undo_last_movement():
+    """En son eklenen hareket kaydını siler (yanlışlıkla girilen kayıtları düzeltmek için)."""
+
+    movements = load_movements()
+    if movements.empty:
+        return None
+
+    last_row = movements.iloc[-1].to_dict()
+    movements = movements.iloc[:-1]
+    movements.to_csv(MOVEMENTS_FILE, index=False)
+    return last_row
+
+
+def get_moved_out_numbers(movements):
+    """Kapı çıkışı yapılmış veya gemiye yüklenmiş (yani sahadan ayrılmış)
+    konteyner numaralarının kümesini döndürür."""
+
+    if movements.empty:
+        return set()
+    return set(movements["KONTEYNER"].tolist())
+
+
 def lookup_container(df, raw_number):
     """Tek bir konteyner numarasını veritabanında arar.
     Dönüş: (status, record_or_none, normalized) -- status: 'ok' | 'not_found' | 'duplicate' | 'invalid'"""
@@ -1138,7 +1197,7 @@ line_options = ["Hat seçilmedi"] + available_lines
 # SEKMELER
 # =========================================================
 
-tab_single, tab_batch = st.tabs(["⚓ Tekli Arama", "📋 Toplu Doğrulama"])
+tab_single, tab_batch, tab_stock = st.tabs(["⚓ Tekli Arama", "📋 Toplu Doğrulama", "📦 Stok Takibi"])
 
 
 # ---------------------------------------------------------
@@ -1541,6 +1600,189 @@ with tab_batch:
                     <div class="batch-detail">{safe(row['detail'])}</div>
                 </div>
             """)
+
+
+# ---------------------------------------------------------
+# STOK TAKİBİ
+# ---------------------------------------------------------
+
+with tab_stock:
+
+    movements = load_movements()
+    moved_out = get_moved_out_numbers(movements)
+
+    total_count = len(df)
+    gate_out_count = int((movements["HAREKET"] == "Kapı Çıkışı").sum()) if not movements.empty else 0
+    loaded_count = int((movements["HAREKET"] == "Gemiye Yükleme").sum()) if not movements.empty else 0
+    remaining_df = df[~df["_SEARCH"].isin(moved_out)]
+    remaining_count = len(remaining_df)
+
+    st.subheader("Konteyner Stok Takibi")
+    st.caption("Kapı çıkışlarını ve gemiye yüklenen konteynerleri kaydedin — limanda kalan stok otomatik hesaplanır.")
+
+    s1, s2, s3, s4 = st.columns(4)
+
+    with s1:
+        st.html(f"""
+            <div class="stat-card">
+                <div class="stat-accent-blue"></div>
+                <div class="stat-icon">▣</div>
+                <div class="stat-label">Toplam Envanter</div>
+                <div class="stat-value">{total_count:,}</div>
+            </div>
+        """)
+
+    with s2:
+        st.html(f"""
+            <div class="stat-card">
+                <div class="stat-accent-blue"></div>
+                <div class="stat-icon">🚪</div>
+                <div class="stat-label">Kapı Çıkışı</div>
+                <div class="stat-value">{gate_out_count:,}</div>
+            </div>
+        """)
+
+    with s3:
+        st.html(f"""
+            <div class="stat-card">
+                <div class="stat-accent-blue"></div>
+                <div class="stat-icon">🚢</div>
+                <div class="stat-label">Gemiye Yüklenen</div>
+                <div class="stat-value">{loaded_count:,}</div>
+            </div>
+        """)
+
+    with s4:
+        st.html(f"""
+            <div class="stat-card">
+                <div class="stat-accent-green"></div>
+                <div class="stat-icon">◷</div>
+                <div class="stat-label">Limanda Kalan</div>
+                <div class="stat-value">{remaining_count:,}</div>
+            </div>
+        """)
+
+    st.write("")
+
+    # -------------------------------------------------
+    # HAREKET KAYDETME FORMU
+    # -------------------------------------------------
+
+    with st.container(border=True):
+
+        st.markdown("**Hareket Kaydet**")
+
+        movement_type = st.radio(
+            "Hareket Tipi",
+            ["Kapı Çıkışı", "Gemiye Yükleme"],
+            horizontal=True,
+            key="movement_type_select"
+        )
+
+        mc1, mc2 = st.columns([2, 1])
+
+        with mc1:
+            movement_container_input = st.text_input(
+                "Konteyner Numarası",
+                placeholder="Örnek: SEKU6920313",
+                max_chars=20,
+                key="movement_container_query"
+            )
+
+        with mc2:
+            movement_note = st.text_input(
+                "Not (opsiyonel)",
+                placeholder="Gemi adı, plaka no vb.",
+                key="movement_note_input"
+            )
+
+        movement_normalized = normalize_container(movement_container_input)
+
+        if movement_normalized:
+            if movement_normalized in moved_out:
+                st.html(
+                    f'<div class="format-hint format-bad">⚠ Bu konteyner için zaten bir hareket kaydı var: '
+                    f'{safe(movement_normalized)}</div>'
+                )
+            elif movement_normalized not in set(df["_SEARCH"]):
+                st.html(
+                    f'<div class="format-hint format-bad">⚠ Bu konteyner mevcut veritabanında bulunamadı, '
+                    f'yine de kaydedilebilir: {safe(movement_normalized)}</div>'
+                )
+            elif not is_valid_format(movement_normalized):
+                st.html(
+                    f'<div class="format-hint format-bad">⚠ Format hatalı olabilir: {safe(movement_normalized)}</div>'
+                )
+            else:
+                st.html(f'<div class="format-hint format-ok">✓ Format geçerli — {safe(movement_normalized)}</div>')
+
+        save_clicked = st.button(
+            "HAREKETİ KAYDET",
+            type="primary",
+            use_container_width=True,
+            key="save_movement_button"
+        )
+
+        if save_clicked:
+            if not movement_normalized:
+                st.warning("Lütfen konteyner numarası girin.")
+            else:
+                save_movement(movement_normalized, movement_type, movement_note)
+                st.success(f"✓ Kaydedildi: {movement_normalized} — {movement_type}")
+                st.rerun()
+
+    st.write("")
+
+    # -------------------------------------------------
+    # SON HAREKETLER
+    # -------------------------------------------------
+
+    with st.expander(f"Son Hareketler ({len(movements)} kayıt)", expanded=False):
+
+        if movements.empty:
+            st.caption("Henüz kayıtlı hareket yok.")
+        else:
+            recent = movements.iloc[::-1].head(20)
+            st.dataframe(recent, use_container_width=True, hide_index=True)
+
+            undo_clicked = st.button(
+                "↺ Son Kaydı Geri Al",
+                key="undo_movement_button",
+                help="Yanlışlıkla eklenen son hareket kaydını siler."
+            )
+
+            if undo_clicked:
+                undone = undo_last_movement()
+                if undone:
+                    st.success(f"Geri alındı: {undone['KONTEYNER']} — {undone['HAREKET']}")
+                    st.rerun()
+
+    # -------------------------------------------------
+    # LİMANDA KALAN KONTEYNERLER
+    # -------------------------------------------------
+
+    with st.expander(f"Limanda Kalan Konteynerler ({remaining_count})", expanded=False):
+
+        if remaining_df.empty:
+            st.caption("Limanda kayıtlı konteyner kalmadı.")
+        else:
+            display_cols = [c for c in ["CONTAINER", "AGENT", "VESSEL NAME", "AREA", "SIZE", "TYPE"] if c in remaining_df.columns]
+            st.dataframe(remaining_df[display_cols], use_container_width=True, hide_index=True)
+
+            csv_data = remaining_df[display_cols].to_csv(index=False).encode("utf-8-sig")
+            st.download_button(
+                "📥 Listeyi CSV Olarak İndir",
+                data=csv_data,
+                file_name=f"limanda_kalan_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
+
+    st.caption(
+        "⚠ Not: Hareket kayıtları sunucudaki bir CSV dosyasında tutulur. Uygulamayı barındırdığın "
+        "servis (ör. Streamlit Cloud) her yeniden dağıtımda dosya sistemini sıfırlıyorsa, kayıtlar "
+        "kaybolabilir — önemli dönemlerde CSV'yi düzenli olarak indirip yedeklemen önerilir."
+    )
 
 
 # =========================================================
