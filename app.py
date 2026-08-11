@@ -109,6 +109,31 @@ TRANSLATIONS = {
         "high_contrast": "Yüksek Kontrast",
         "high_contrast_help": "Güneş ışığı altında veya düşük görüş koşullarında okunabilirliği artırır.",
         "language_label": "🌐 Dil",
+        "staff_name_label": "👤 Personel Adı",
+        "staff_name_placeholder": "👤 Personel adınızı girin (opsiyonel)",
+        "dq_warning_title": "Veri Kalitesi Uyarısı — containers.xlsx'te kontrol edilmesi gereken kayıtlar var",
+        "dq_duplicate": "mükerrer konteyner numarası",
+        "dq_missing_size": "kayıtta boyut (SIZE) bilgisi eksik",
+        "dq_missing_status": "kayıtta dolu/boş (FULL-MTY) bilgisi eksik",
+        "dq_missing_agent": "kayıtta hat (AGENT) bilgisi eksik",
+        "dwell_title": "⏱ Bekleme Süresi Analizi",
+        "dwell_caption": "Tahliye tarihinden bugüne kaç gün geçtiğine göre sahada en uzun süredir bekleyen konteynerler.",
+        "dwell_empty": "Tahliye tarihi (DISCHARGE DATE) bilgisi olan kayıt bulunamadı.",
+        "dwell_critical_count": "⚠ {count} konteyner 21 günden uzun süredir sahada bekliyor.",
+        "dwell_days_column": "Gün",
+        "timeline_title": "🕐 Konteyner Geçmişi",
+        "timeline_empty": "Bu konteyner için henüz kapı çıkışı, gemiye yükleme veya CFS kaydı yok.",
+        "cfs_autofill_found": "Ana veritabanında bulundu — Gemi: {vessel} • Voyage: {voyage} • Hat: {agent}",
+        "cfs_autofill_button": "Bu bilgileri kullan",
+        "shift_summary_title": "📋 Günlük Vardiya Özeti",
+        "shift_summary_caption": "Bugünkü tüm işlemlerin (kapı çıkışı, gemiye yükleme, CFS boşaltımı) tek özeti — kopyalayıp paylaşabilirsin.",
+        "shift_summary_report_title": "Günlük Özet",
+        "shift_summary_total": "Toplam İşlem",
+        "backup_reminder_text": "💾 Gün sona eriyor — bugünkü kapı çıkışı, gemiye yükleme ve CFS kayıtlarını Excel olarak indirip yedeklemeyi unutma. Sunucu yeniden başlarsa kayıtlar kaybolabilir.",
+        "backup_reminder_dismiss": "Bu hatırlatıcıyı kapat",
+        "add_home_screen_title": "📱 Ana Ekrana Ekle (uygulama gibi kullan)",
+        "add_home_screen_ios": "**iPhone (Safari):** Paylaş simgesine dokun (kare + ok) → \"Ana Ekrana Ekle\" seçeneğine dokun.",
+        "add_home_screen_android": "**Android (Chrome):** Sağ üstteki ⋮ menüsüne dokun → \"Ana ekrana ekle\" veya \"Uygulama yükle\" seçeneğine dokun.",
 
         "hero_brand": "LİMAN OPERASYONLARI",
         "hero_title": "Konteyner Takip ve Doğrulama Sistemi",
@@ -319,6 +344,31 @@ TRANSLATIONS = {
         "high_contrast": "High Contrast",
         "high_contrast_help": "Improves readability in bright sunlight or low-visibility conditions.",
         "language_label": "🌐 Language",
+        "staff_name_label": "👤 Staff Name",
+        "staff_name_placeholder": "👤 Enter your name (optional)",
+        "dq_warning_title": "Data Quality Warning — some records in containers.xlsx need attention",
+        "dq_duplicate": "duplicate container number(s)",
+        "dq_missing_size": "record(s) missing size (SIZE) data",
+        "dq_missing_status": "record(s) missing full/empty (FULL-MTY) data",
+        "dq_missing_agent": "record(s) missing line (AGENT) data",
+        "dwell_title": "⏱ Dwell Time Analysis",
+        "dwell_caption": "Containers that have been in the yard the longest, based on days since discharge.",
+        "dwell_empty": "No records with discharge date (DISCHARGE DATE) data were found.",
+        "dwell_critical_count": "⚠ {count} containers have been in the yard for more than 21 days.",
+        "dwell_days_column": "Days",
+        "timeline_title": "🕐 Container History",
+        "timeline_empty": "No gate exit, vessel loading, or CFS record yet for this container.",
+        "cfs_autofill_found": "Found in main database — Vessel: {vessel} • Voyage: {voyage} • Line: {agent}",
+        "cfs_autofill_button": "Use this information",
+        "shift_summary_title": "📋 Daily Shift Summary",
+        "shift_summary_caption": "One combined summary of today's activity (gate exits, vessel loadings, CFS strippings) — copy and share it.",
+        "shift_summary_report_title": "Daily Summary",
+        "shift_summary_total": "Total Transactions",
+        "backup_reminder_text": "💾 The day is winding down — don't forget to export and back up today's gate exits, vessel loadings, and CFS records as Excel. Records may be lost if the server restarts.",
+        "backup_reminder_dismiss": "Dismiss this reminder",
+        "add_home_screen_title": "📱 Add to Home Screen (use it like an app)",
+        "add_home_screen_ios": "**iPhone (Safari):** Tap the Share icon (square with an arrow) → tap \"Add to Home Screen\".",
+        "add_home_screen_android": "**Android (Chrome):** Tap the ⋮ menu in the top right → tap \"Add to Home screen\" or \"Install app\".",
 
         "hero_brand": "PORT OPERATIONS",
         "hero_title": "Container Tracking & Verification System",
@@ -567,6 +617,7 @@ def localize_movements_display(movements_slice):
             "HAREKET": "MOVEMENT",
             "TARIH": "DATE",
             "NOT": "NOTE",
+            "PERSONEL": "STAFF",
         })
 
     return display
@@ -1125,6 +1176,52 @@ div[data-testid="stMetricValue"] {
 
 
 /* =====================================================
+   KONTEYNER GEÇMİŞİ (TIMELINE)
+   ===================================================== */
+
+.timeline-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.timeline-item:last-child {
+    border-bottom: none;
+}
+
+.timeline-icon {
+    font-size: 16px;
+    min-width: 26px;
+    text-align: center;
+}
+
+.timeline-content {
+    flex: 1;
+}
+
+.timeline-type {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--navy);
+}
+
+.timeline-date {
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-top: 1px;
+}
+
+.timeline-detail {
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+    font-style: italic;
+}
+
+
+/* =====================================================
    ANA SAYFA DASHBOARD
    ===================================================== */
 
@@ -1446,7 +1543,27 @@ def load_database(file_name, modified_time):
     return df
 
 
-MOVEMENT_COLUMNS = ["KONTEYNER", "HAREKET", "TARIH", "NOT"]
+def validate_database_quality(df):
+    """Yüklenen konteyner veritabanında mükerrer kayıt veya eksik zorunlu
+    alan olup olmadığını kontrol eder. Uygulamayı durdurmaz, sadece uyarır."""
+
+    issues = {}
+
+    normalized = df["_SEARCH"][df["_SEARCH"] != ""]
+    duplicate_count = int(normalized.duplicated().sum())
+    if duplicate_count > 0:
+        issues["duplicate"] = duplicate_count
+
+    for col, key in [("SIZE", "missing_size"), ("FULL-MTY", "missing_status"), ("AGENT", "missing_agent")]:
+        if col in df.columns:
+            missing = int(((df[col] == "") | (df[col].isna())).sum())
+            if missing > 0:
+                issues[key] = missing
+
+    return issues
+
+
+MOVEMENT_COLUMNS = ["KONTEYNER", "HAREKET", "TARIH", "NOT", "PERSONEL"]
 
 
 def load_movements():
@@ -1479,7 +1596,8 @@ def save_movement(container_number, hareket_tipi, note="", movement_datetime=Non
         "KONTEYNER": container_number,
         "HAREKET": hareket_tipi,
         "TARIH": timestamp,
-        "NOT": note
+        "NOT": note,
+        "PERSONEL": st.session_state.get("staff_name", "").strip()
     }])
 
     movements = pd.concat([movements, new_row], ignore_index=True)
@@ -1514,7 +1632,7 @@ CFS_COLUMNS = [
     "BOS_KONTEYNER_TARIHI", "CIKIS_TARIHI",
     "ARAC_SAYISI", "MODEL", "SASI_NUMARASI",
     "YUKLEME_GEMISI", "YUKLEME_VOYAGE_NO", "EC_YUKLEME_TARIHI",
-    "KAYIT_ZAMANI",
+    "KAYIT_ZAMANI", "PERSONEL",
 ]
 
 
@@ -1541,6 +1659,7 @@ def save_cfs_record(record):
 
     full_record = {col: record.get(col, "") for col in CFS_COLUMNS}
     full_record["KAYIT_ZAMANI"] = datetime.now().strftime("%d.%m.%Y %H:%M")
+    full_record["PERSONEL"] = st.session_state.get("staff_name", "").strip()
 
     new_row = pd.DataFrame([full_record])
     records = pd.concat([records, new_row], ignore_index=True)
@@ -1601,6 +1720,7 @@ def localize_cfs_display(records_slice):
             "YUKLEME_VOYAGE_NO": "VOYAGE NO",
             "EC_YUKLEME_TARIHI": "E/C LOADED DATE/TIME",
             "KAYIT_ZAMANI": "ENTRY TIME",
+            "PERSONEL": "STAFF",
         })
     else:
         display = display.rename(columns={
@@ -1813,6 +1933,72 @@ def compute_line_breakdown(remaining_df):
     return breakdown
 
 
+def compute_dwell_time(remaining_df, threshold_days=21):
+    """Limanda kalan konteynerlerin tahliye tarihinden bugüne kaç gün geçtiğini
+    hesaplar. DISCHARGE DATE ayrıştırılamayan kayıtlar sonuca dahil edilmez."""
+
+    if remaining_df.empty or "DISCHARGE DATE" not in remaining_df.columns:
+        return pd.DataFrame()
+
+    work = remaining_df.copy()
+    work["_DISCHARGE_DT"] = pd.to_datetime(work["DISCHARGE DATE"], errors="coerce")
+    work = work.dropna(subset=["_DISCHARGE_DT"])
+
+    if work.empty:
+        return pd.DataFrame()
+
+    today = pd.Timestamp(datetime.now().date())
+    work["_DWELL_DAYS"] = (today - work["_DISCHARGE_DT"]).dt.days
+    work["_LINE"] = work["AGENT"].apply(normalize_line) if "AGENT" in work.columns else "-"
+
+    result = work[["CONTAINER", "_LINE", "SIZE", "AREA", "_DWELL_DAYS"]].copy()
+    result.columns = ["Konteyner", "Hat", "Boyut", "Saha", "Gün"]
+    result["Kritik"] = result["Gün"] >= threshold_days
+    result = result.sort_values("Gün", ascending=False)
+
+    return result
+
+
+def get_container_timeline(container_number):
+    """Bir konteynerin kapı çıkışı / gemiye yükleme ve CFS boşaltım kayıtlarını
+    tarih sırasıyla birleştirip döndürür. Ana veritabanındaki tahliye tarihi
+    de dahil edilir, böylece konteynerin tüm hayat hikâyesi tek listede görünür."""
+
+    events = []
+
+    movements = load_movements()
+    if not movements.empty:
+        matching = movements[movements["KONTEYNER"] == container_number]
+        for _, row in matching.iterrows():
+            events.append({
+                "date": row["TARIH"],
+                "type": movement_label(row["HAREKET"]),
+                "detail": row.get("NOT", ""),
+                "icon": "🚪" if row["HAREKET"] == "Kapı Çıkışı" else "🚢",
+            })
+
+    cfs_records = load_cfs_records()
+    if not cfs_records.empty:
+        matching_cfs = cfs_records[cfs_records["KONTEYNER"] == container_number]
+        for _, row in matching_cfs.iterrows():
+            cargo_label = t("cfs_cargo_type_vehicle") if row["KARGO_TIPI"] == "ARAÇ" else t("cfs_cargo_type_transit")
+            events.append({
+                "date": row["BOSALTIM_TARIHI"],
+                "type": f"{t('tab_cfs')} — {cargo_label}",
+                "detail": row.get("TERMINAL", ""),
+                "icon": "📥",
+            })
+
+    def _sort_key(event):
+        parsed = pd.to_datetime(event["date"], format="%d.%m.%Y %H:%M", errors="coerce")
+        if pd.isna(parsed):
+            parsed = pd.to_datetime(event["date"], format="%d.%m.%Y", errors="coerce")
+        return parsed if not pd.isna(parsed) else pd.Timestamp.min
+
+    events.sort(key=_sort_key)
+    return events
+
+
 def compute_daily_trend(movements, days=14):
     """Son N gün için günlük kapı çıkışı / gemiye yükleme adetlerini
     grafikte kullanılabilecek bir DataFrame olarak döndürür."""
@@ -1839,6 +2025,36 @@ def compute_daily_trend(movements, days=14):
     }, index=date_index)
 
     return trend
+
+
+def build_shift_summary_text(gate_today, load_today, cfs_today, date_label):
+    """Kapı çıkışı, gemiye yükleme ve CFS boşaltımını tek bir paylaşılabilir
+    metin özetinde birleştirir (WhatsApp/e-posta ile paylaşıma uygun)."""
+
+    lines = [f"⚓ ALPORT BANJUL — {t('shift_summary_report_title')} ({date_label})", ""]
+
+    lines.append(f"🚪 {t('movement_gate')}: {len(gate_today)}")
+    if not gate_today.empty:
+        for _, row in gate_today.iterrows():
+            lines.append(f"   • {row['KONTEYNER']}")
+
+    lines.append("")
+    lines.append(f"🚢 {t('movement_load')}: {len(load_today)}")
+    if not load_today.empty:
+        for _, row in load_today.iterrows():
+            lines.append(f"   • {row['KONTEYNER']}")
+
+    lines.append("")
+    lines.append(f"📥 {t('tab_cfs')}: {len(cfs_today)}")
+    if not cfs_today.empty:
+        for _, row in cfs_today.iterrows():
+            lines.append(f"   • {row['KONTEYNER']}")
+
+    total = len(gate_today) + len(load_today) + len(cfs_today)
+    lines.append("")
+    lines.append(f"{t('shift_summary_total')}: {total}")
+
+    return "\n".join(lines)
 
 
 def lookup_container(df, raw_number):
@@ -2082,6 +2298,13 @@ def apply_ocr_guess(value):
     st.session_state.container_query = value
 
 
+def apply_cfs_autofill(vessel, voyage, agent):
+    st.session_state.cfs_vessel_input = vessel
+    st.session_state.cfs_voyage_input = voyage
+    if agent in line_options:
+        st.session_state.cfs_agent_select = agent
+
+
 # Bir önceki işlemden (kayıt/geri alma) bekleyen toast bildirimi varsa göster
 if st.session_state.toast_message:
     st.toast(st.session_state.toast_message, icon="✅")
@@ -2092,7 +2315,7 @@ if st.session_state.toast_message:
 # ÜST ARAÇ ÇUBUĞU
 # =========================================================
 
-lang_col, contrast_col = st.columns([3, 3])
+lang_col, staff_col, contrast_col = st.columns([2.2, 2.8, 2])
 
 with lang_col:
     lang_choice = st.selectbox(
@@ -2107,12 +2330,46 @@ with lang_col:
         st.session_state.language = lang_choice
         st.rerun()
 
+with staff_col:
+    st.text_input(
+        t("staff_name_label"),
+        key="staff_name",
+        placeholder=t("staff_name_placeholder"),
+        label_visibility="collapsed"
+    )
+
 with contrast_col:
     st.toggle(
         t("high_contrast"),
         key="high_contrast",
         help=t("high_contrast_help")
     )
+
+
+# -------------------------------------------------
+# YEDEKLEME HATIRLATICISI
+# -------------------------------------------------
+
+if "backup_reminder_dismissed" not in st.session_state:
+    st.session_state.backup_reminder_dismissed = False
+
+if datetime.now().hour >= 17 and not st.session_state.backup_reminder_dismissed:
+    reminder_col, dismiss_col = st.columns([6, 1])
+    with reminder_col:
+        st.info(t("backup_reminder_text"))
+    with dismiss_col:
+        if st.button("✕", key="dismiss_backup_reminder", help=t("backup_reminder_dismiss")):
+            st.session_state.backup_reminder_dismissed = True
+            st.rerun()
+
+
+# -------------------------------------------------
+# ANA EKRANA EKLEME İPUCU (mobil kısayol)
+# -------------------------------------------------
+
+with st.expander(t("add_home_screen_title")):
+    st.markdown(t("add_home_screen_ios"))
+    st.markdown(t("add_home_screen_android"))
 
 
 # =========================================================
@@ -2175,6 +2432,22 @@ except Exception:
 
 update_time = datetime.fromtimestamp(modified_time).strftime("%d.%m.%Y • %H:%M")
 
+_db_issues = validate_database_quality(df)
+if _db_issues:
+    _issue_parts = []
+    if "duplicate" in _db_issues:
+        _issue_parts.append(f"{_db_issues['duplicate']} {t('dq_duplicate')}")
+    if "missing_size" in _db_issues:
+        _issue_parts.append(f"{_db_issues['missing_size']} {t('dq_missing_size')}")
+    if "missing_status" in _db_issues:
+        _issue_parts.append(f"{_db_issues['missing_status']} {t('dq_missing_status')}")
+    if "missing_agent" in _db_issues:
+        _issue_parts.append(f"{_db_issues['missing_agent']} {t('dq_missing_agent')}")
+
+    with st.expander(f"⚠️ {t('dq_warning_title')}", expanded=False):
+        for part in _issue_parts:
+            st.caption(f"• {part}")
+
 
 # =========================================================
 # DURUM KARTLARI
@@ -2213,6 +2486,41 @@ _movements_for_dashboard = load_movements()
 _moved_out_for_dashboard = get_moved_out_numbers(_movements_for_dashboard)
 _remaining_for_dashboard = df[~df["_SEARCH"].isin(_moved_out_for_dashboard)]
 _dash = compute_yard_dashboard(_remaining_for_dashboard)
+
+# -------------------------------------------------
+# GÜNLÜK VARDİYA ÖZETİ
+# -------------------------------------------------
+
+_cfs_for_dashboard = load_cfs_records()
+_today_str_dashboard = datetime.now().strftime("%d.%m.%Y")
+
+_gate_today_summary = (
+    _movements_for_dashboard[
+        (_movements_for_dashboard["HAREKET"] == "Kapı Çıkışı")
+        & (_movements_for_dashboard["TARIH"].str.startswith(_today_str_dashboard))
+    ] if not _movements_for_dashboard.empty else _movements_for_dashboard
+)
+_load_today_summary = (
+    _movements_for_dashboard[
+        (_movements_for_dashboard["HAREKET"] == "Gemiye Yükleme")
+        & (_movements_for_dashboard["TARIH"].str.startswith(_today_str_dashboard))
+    ] if not _movements_for_dashboard.empty else _movements_for_dashboard
+)
+_cfs_today_summary = (
+    _cfs_for_dashboard[_cfs_for_dashboard["BOSALTIM_TARIHI"] == _today_str_dashboard]
+    if not _cfs_for_dashboard.empty else _cfs_for_dashboard
+)
+
+_shift_total = len(_gate_today_summary) + len(_load_today_summary) + len(_cfs_today_summary)
+
+with st.expander(f"{t('shift_summary_title')} — {t('shift_summary_total')}: {_shift_total}", expanded=False):
+    st.caption(t("shift_summary_caption"))
+    _summary_text = build_shift_summary_text(
+        _gate_today_summary, _load_today_summary, _cfs_today_summary, _today_str_dashboard
+    )
+    st.code(_summary_text, language=None)
+
+st.write("")
 
 st.html(f"""
 <div class="dashboard-header">
@@ -2362,6 +2670,40 @@ with st.expander(t("line_breakdown_title"), expanded=False):
             "Toplam": t("batch_total"),
         })
         st.dataframe(display_breakdown, use_container_width=True, hide_index=True)
+
+st.write("")
+
+# -------------------------------------------------
+# BEKLEME SÜRESİ ANALİZİ (DWELL TIME)
+# -------------------------------------------------
+
+with st.expander(t("dwell_title"), expanded=False):
+
+    st.caption(t("dwell_caption"))
+
+    _dwell_df = compute_dwell_time(_remaining_for_dashboard, threshold_days=21)
+
+    if _dwell_df.empty:
+        st.html(f"""
+            <div class="empty-state">
+                <div class="empty-state-icon">⏱</div>
+                <div class="empty-state-title">{t('dwell_empty')}</div>
+            </div>
+        """)
+    else:
+        critical_count = int(_dwell_df["Kritik"].sum())
+        st.caption(t("dwell_critical_count", count=critical_count))
+
+        top_dwell = _dwell_df.head(15).drop(columns=["Kritik"]).rename(columns={
+            "Konteyner": t("container_number_result_label").title() if st.session_state.language == "en" else "Konteyner",
+            "Hat": t("line_column_label"),
+            "Boyut": t("size_label"),
+            "Saha": t("area_label"),
+            "Gün": t("dwell_days_column"),
+        })
+        st.dataframe(top_dwell, use_container_width=True, hide_index=True)
+
+st.write("")
 
 st.write("")
 
@@ -2650,6 +2992,33 @@ with tab_single:
                             st.write(t("imo_class_label"), imo_class)
                         if discharge_date != "-":
                             st.write(t("discharge_date_label"), discharge_date)
+
+                _timeline = get_container_timeline(container)
+
+                with st.expander(f"{t('timeline_title')} ({len(_timeline)})"):
+                    if not _timeline:
+                        st.html(f"""
+                            <div class="empty-state">
+                                <div class="empty-state-icon">🕐</div>
+                                <div class="empty-state-title">{t('timeline_empty')}</div>
+                            </div>
+                        """)
+                    else:
+                        for event in _timeline:
+                            detail_html = (
+                                f'<div class="timeline-detail">{safe(event["detail"])}</div>'
+                                if event["detail"] else ""
+                            )
+                            st.html(f"""
+                                <div class="timeline-item">
+                                    <div class="timeline-icon">{event['icon']}</div>
+                                    <div class="timeline-content">
+                                        <div class="timeline-type">{safe(event['type'])}</div>
+                                        <div class="timeline-date">{safe(event['date'])}</div>
+                                        {detail_html}
+                                    </div>
+                                </div>
+                            """)
 
 
 # ---------------------------------------------------------
@@ -3300,6 +3669,20 @@ with tab_cfs:
             else:
                 st.html(
                     f'<div class="format-hint format-bad">⚠ {t("invalid_format_short")} {safe(cfs_normalized)}</div>'
+                )
+
+            _cfs_db_match = df[df["_SEARCH"] == cfs_normalized]
+            if not _cfs_db_match.empty:
+                _match_row = _cfs_db_match.iloc[0]
+                _match_vessel = clean_value(_match_row, "VESSEL NAME")
+                _match_voyage = clean_value(_match_row, "VOYAGE NUMBER")
+                _match_agent = normalize_line(clean_value(_match_row, "AGENT"))
+                st.info(t("cfs_autofill_found", vessel=_match_vessel, voyage=_match_voyage, agent=_match_agent))
+                st.button(
+                    t("cfs_autofill_button"),
+                    key="cfs_autofill_btn",
+                    on_click=apply_cfs_autofill,
+                    args=(_match_vessel, _match_voyage, _match_agent)
                 )
 
         cv1, cv2 = st.columns(2)
