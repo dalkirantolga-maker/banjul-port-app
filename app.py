@@ -155,6 +155,10 @@ TRANSLATIONS = {
         "consolidated_report_title": "📊 Konsolide Rapor",
         "consolidated_report_caption": "Bir tarih aralığı seçip; envanter özeti, hat kırılımı, bekleme süresi ve dönem içi hareketleri tek bir Excel dosyasında indirin.",
         "consolidated_report_button": "📥 Konsolide Raporu İndir (Excel)",
+        "system_status_online": "SİSTEM AKTİF",
+        "system_status_module": "MODÜL",
+        "system_status_ops": "LİMAN OPERASYONLARI",
+        "system_status_refresh": "SON YENİLEME",
 
         "hero_brand": "LİMAN OPERASYONLARI",
         "hero_title": "Konteyner Takip ve Doğrulama Sistemi",
@@ -407,6 +411,10 @@ TRANSLATIONS = {
         "consolidated_report_title": "📊 Consolidated Report",
         "consolidated_report_caption": "Select a date range and download an inventory summary, line breakdown, dwell time, and period movements — all in one Excel file.",
         "consolidated_report_button": "📥 Download Consolidated Report (Excel)",
+        "system_status_online": "SYSTEM ONLINE",
+        "system_status_module": "MODULE",
+        "system_status_ops": "PORT OPERATIONS",
+        "system_status_refresh": "LAST REFRESH",
 
         "hero_brand": "PORT OPERATIONS",
         "hero_title": "Container Tracking & Verification System",
@@ -692,6 +700,111 @@ BASE_CSS = """
 #MainMenu { visibility: hidden; }
 footer { visibility: hidden; }
 header { visibility: hidden; }
+
+
+/* =====================================================
+   SİSTEM DURUM ŞERİDİ
+   ===================================================== */
+
+.status-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    background: var(--navy-deep);
+    color: #A9BBCB;
+    padding: 9px 18px;
+    border-radius: 6px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 18px;
+    font-family: 'IBM Plex Mono', monospace;
+    border: 1px solid rgba(184,134,11,0.25);
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.status-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #35D07F;
+    box-shadow: 0 0 6px rgba(53,208,127,0.8);
+    animation: statusPulse 2.2s infinite;
+}
+
+@keyframes statusPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+}
+
+.status-divider {
+    color: rgba(184,134,11,0.4);
+}
+
+
+/* =====================================================
+   SEKME NAVİGASYONU (PROFESYONEL KONTROL PANELİ)
+   ===================================================== */
+
+div[data-baseweb="tab-list"] {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    padding: 0 4px;
+    gap: 0px;
+    box-shadow: 0 2px 8px rgba(15,42,68,0.04);
+}
+
+button[data-baseweb="tab"] {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.7px !important;
+    text-transform: uppercase;
+    color: var(--ink-soft) !important;
+    padding: 15px 16px !important;
+    transition: all 0.15s ease;
+}
+
+button[data-baseweb="tab"]:hover {
+    color: var(--navy) !important;
+    background: rgba(15,42,68,0.03);
+}
+
+button[data-baseweb="tab"][aria-selected="true"] {
+    color: var(--navy) !important;
+    font-weight: 800 !important;
+    background: rgba(184,134,11,0.05);
+}
+
+div[data-baseweb="tab-highlight"] {
+    background-color: var(--gold) !important;
+    height: 3px !important;
+}
+
+div[data-baseweb="tab-border"] {
+    background-color: var(--border) !important;
+    height: 1px !important;
+}
+
+div[data-baseweb="tab-panel"] {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    padding: 22px 20px 20px 20px !important;
+    box-shadow: 0 2px 8px rgba(15,42,68,0.04);
+}
 
 
 /* =====================================================
@@ -2599,6 +2712,16 @@ st.html(f"""
         <circle cx="100" cy="98" r="10" fill="none" stroke="#D4A72C" stroke-width="2" opacity="0.75"/>
     </svg>
 
+</div>
+""")
+
+st.html(f"""
+<div class="status-strip">
+    <div class="status-item"><span class="status-dot"></span>{t('system_status_online')}</div>
+    <span class="status-divider">|</span>
+    <div class="status-item">📡 {t('system_status_module')}: {t('system_status_ops')}</div>
+    <span class="status-divider">|</span>
+    <div class="status-item">🕐 {t('system_status_refresh')}: {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}</div>
 </div>
 """)
 
