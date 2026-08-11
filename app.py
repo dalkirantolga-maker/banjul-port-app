@@ -92,8 +92,373 @@ if "high_contrast" not in st.session_state:
 if "container_query" not in st.session_state:
     st.session_state.container_query = ""
 
+if "language" not in st.session_state:
+    st.session_state.language = "tr"
+
 
 # =========================================================
+# ÇEVİRİLER (TR / EN)
+# =========================================================
+
+TRANSLATIONS = {
+    "tr": {
+        "high_contrast": "Yüksek Kontrast",
+        "high_contrast_help": "Güneş ışığı altında veya düşük görüş koşullarında okunabilirliği artırır.",
+        "language_label": "🌐 Dil",
+
+        "hero_brand": "LİMAN OPERASYONLARI",
+        "hero_title": "Konteyner Takip ve Doğrulama Sistemi",
+        "hero_subtitle": "Gemi yüklemesinden önceki son kontrol noktası: konteyner numarası, shipping line ve saha kaydını tek ekranda doğrulayın.",
+        "hero_badge": "⚓ OPERASYONEL DOĞRULAMA",
+
+        "db_error": "Konteyner veri dosyasına ulaşılamıyor.",
+        "db_loading": "Veritabanı yükleniyor...",
+        "db_load_error": "Konteyner veritabanı yüklenemedi.",
+
+        "stat_current_record": "Güncel Kayıt",
+        "stat_container_unit": "Konteyner",
+        "stat_last_update": "Son Güncelleme",
+
+        "dashboard_title": "📊 Liman Envanter Panosu",
+        "dashboard_subtitle": "Şu an sahada bulunan konteynerlerin dağılımı",
+        "dash_full_20": "Dolu 20'",
+        "dash_empty_20": "Boş 20'",
+        "dash_full_40": "Dolu 40'",
+        "dash_empty_40": "Boş 40'",
+        "dash_total_teu": "Toplam TEU",
+        "legend_other": "Diğer / Sınıflandırılamayan",
+        "dash_other_note": "konteyner boyut (SIZE) veya durum (FULL-MTY) bilgisi eksik/tanınmayan bir formatta olduğu için yukarıdaki 20'/40' dağılımına dahil edilemedi, ancak toplam TEU hesabına dahildir.",
+
+        "line_not_selected": "Hat seçilmedi",
+
+        "tab_single": "⚓ Tekli Arama",
+        "tab_batch": "📋 Toplu Doğrulama",
+        "tab_gate": "🚪 Kapı Çıkışı",
+        "tab_load": "🚢 Gemiye Yükleme",
+
+        "single_header": "Konteyner Doğrulama",
+        "single_caption": "Yükleme hattını seçin ve konteyner numarasını girin.",
+        "history_label": "SON ARAMALAR",
+        "line_select_label": "Yükleme Hattı",
+        "camera_expander": "📷 Kamera ile Numara Oku",
+        "ocr_unavailable": "OCR kütüphaneleri kurulu değil. Bu özelliğin çalışması için sunucuda `pytesseract`, `Pillow` paketleri ve `tesseract-ocr` motoru kurulu olmalı.",
+        "camera_hint": "Konteynerin üzerindeki numarayı olabildiğince yakından ve sadece o yazı alanı çerçeveye girecek şekilde fotoğraflayın — gövdenin geneli değil, sadece harf/rakamların olduğu bölüm. Bu, doğruluğu ciddi ölçüde artırır.",
+        "camera_input_label": "Konteyner numarasının fotoğrafını çekin",
+        "camera_reading": "Fotoğraf okunuyor...",
+        "checking": "Kontrol ediliyor...",
+        "ocr_no_match": "Numarayı okuyamadım. Konteynerin sadece numara yazan kısmını yakından, net ve düz açıyla çerçeveleyip tekrar deneyin.",
+        "ocr_pick_suggestion": "Aşağıdaki tahminlerden doğru olanı seçin — birebir eşleşme bulunamadıysa veritabanındaki en yakın gerçek kayıtlar önerildi:",
+        "ocr_found_in_db": "Veritabanında bulundu",
+        "ocr_not_in_db": "Veritabanında birebir yok — OCR tahmini, dikkatli kontrol edin",
+        "ocr_manual_fix": "Yanlışsa aşağıdaki alana elle düzeltip devam edebilirsiniz.",
+        "container_number_label": "Konteyner Numarası",
+        "container_number_placeholder": "Örnek: SEKU6920313",
+        "format_hint_empty": "Konteyner numarasını girin (harf + rakam)",
+        "format_valid": "Format geçerli",
+        "format_invalid_expected": "Format hatalı olabilir — beklenen: 4 harf + 7 rakam (örn. MSKU1234567) — girilen:",
+        "verify_button": "KONTEYNERİ DOĞRULA",
+        "enter_container_warning": "Lütfen konteyner numarası girin.",
+        "invalid_format_title": "GEÇERSİZ FORMAT",
+        "invalid_format_desc": "Konteyner numarası standart formata (4 harf + 7 rakam) uymuyor. Lütfen tekrar kontrol edin.",
+        "not_found_title": "KONTEYNER BULUNAMADI",
+        "not_found_desc": "Bu konteyner güncel veritabanında bulunmuyor.",
+        "do_not_load": "YÜKLEME YAPMAYIN",
+        "duplicate_error": "Aynı konteyner için birden fazla kayıt bulundu.",
+        "duplicate_warning": "Yükleme öncesinde Operasyon Departmanı ile teyit edin.",
+        "wrong_line_title": "YANLIŞ SHIPPING LINE",
+        "registered_line_label": "KONTEYNERİN KAYITLI HATTI",
+        "selected_line_label": "YÜKLEME İÇİN SEÇİLEN HAT",
+        "do_not_load_this": "BU KONTEYNERİ YÜKLEMEYİN",
+        "load_check_success": "✓ Yükleme Kontrolü Başarılı",
+        "load_check_success_sub": "Konteyner seçilen shipping line ile eşleşiyor.",
+        "container_found": "✓ Konteyner Bulundu",
+        "container_found_sub": "Konteyner güncel veritabanında kayıtlı.",
+        "verified_pill": "✓ Doğrulandı",
+        "container_number_result_label": "KONTEYNER NUMARASI",
+        "shipping_line_label": "SHIPPING LINE",
+        "copy_caption": "Numarayı kopyalamak için kutunun sağ üstündeki simgeye tıklayın",
+        "size_label": "Boyut",
+        "type_label": "Konteyner Tipi",
+        "status_label": "Durum",
+        "area_label": "Saha / Konum",
+        "vessel_label": "Gemi",
+        "voyage_label": "Sefer",
+        "operation_details": "Operasyon Detayları",
+        "imo_class_label": "**IMO Sınıfı:**",
+        "discharge_date_label": "**Tahliye Tarihi:**",
+
+        "batch_header": "Toplu Konteyner Doğrulama",
+        "batch_caption": "Her satıra bir konteyner numarası gelecek şekilde yapıştırın (yükleme listesinden kopyala-yapıştır yapabilirsiniz).",
+        "batch_line_label": "Yükleme Hattı (opsiyonel)",
+        "batch_numbers_label": "Konteyner Numaraları",
+        "batch_placeholder": "MSKU1234567\nTCLU7654321\nCMAU9988776\n...",
+        "batch_verify_button": "HEPSİNİ DOĞRULA",
+        "batch_enter_warning": "Lütfen en az bir konteyner numarası girin.",
+        "batch_checking": "konteyner kontrol ediliyor...",
+        "batch_repeat": "Bu liste içinde tekrar ediyor",
+        "batch_invalid": "Geçersiz format",
+        "batch_not_found": "Veritabanında yok — YÜKLEMEYİN",
+        "batch_duplicate": "Birden fazla kayıt — teyit gerekli",
+        "batch_wrong_line": "Kayıtlı hat: {line} (seçilen: {selected}) — YÜKLEMEYİN",
+        "batch_ok_count": "Uygun",
+        "batch_bad_count": "Sorunlu",
+        "batch_total": "Toplam",
+
+        "gate_header": "Kapı Çıkışı Girişi",
+        "gate_caption": "Sahadan çıkan konteynerleri buradan kaydedin — limandaki stoktan otomatik düşer.",
+        "gate_today": "Bugün Çıkan",
+        "gate_total": "Toplam Kapı Çıkışı",
+        "yard_remaining": "Limanda Kalan",
+        "gate_save_header": "**Çıkış Kaydet**",
+        "gate_note_label": "Araç Plakası / Not (opsiyonel)",
+        "gate_note_placeholder": "Örn. BJL 1234",
+        "gate_date_label": "Çıkış Tarihi",
+        "gate_time_label": "Çıkış Saati",
+        "already_has_movement": "Bu konteyner için zaten bir hareket kaydı var:",
+        "not_in_db_but_ok": "Bu konteyner mevcut veritabanında bulunamadı, yine de kaydedilebilir:",
+        "invalid_format_short": "Format hatalı olabilir:",
+        "gate_save_button": "KAPI ÇIKIŞI KAYDET",
+        "gate_saved": "✓ Kapı çıkışı kaydedildi:",
+        "recent_gate_exits": "Son Kapı Çıkışları",
+        "no_gate_exits_yet": "Henüz kayıtlı kapı çıkışı yok.",
+        "undo_last": "↺ Son Kaydı Geri Al",
+        "undo_help": "Yanlışlıkla eklenen son hareket kaydını siler (tüm hareket türleri için geçerlidir).",
+        "undone": "Geri alındı:",
+        "gate_report_header": "**Tarih Bazlı Kapı Çıkışı Raporu**",
+        "gate_report_caption": "Bir tarih aralığı seçip o dönemde çıkış yapan konteynerleri Excel olarak indirin.",
+        "gate_report_empty": "Rapor oluşturmak için önce en az bir kapı çıkışı kaydı olmalı.",
+        "date_range_label": "Tarih Aralığı",
+        "gate_records_found": "Seçilen aralıkta {count} kapı çıkışı kaydı bulundu.",
+        "excel_download": "📥 Excel Olarak İndir",
+        "movements_persistence_note": "⚠ Not: Hareket kayıtları sunucudaki bir CSV dosyasında tutulur. Uygulamayı barındırdığın servis (ör. Streamlit Cloud) her yeniden dağıtımda dosya sistemini sıfırlıyorsa, kayıtlar kaybolabilir — önemli dönemlerde Excel raporunu düzenli olarak indirip yedeklemen önerilir.",
+
+        "load_header": "Gemiye Yükleme Girişi",
+        "load_caption": "Gemiye yüklenen konteynerleri buradan kaydedin — limandaki stoktan otomatik düşer.",
+        "load_today": "Bugün Yüklenen",
+        "load_total": "Toplam Yüklenen",
+        "load_save_header": "**Yükleme Kaydet**",
+        "load_note_label": "Gemi Adı / Not (opsiyonel)",
+        "load_note_placeholder": "Örn. MSC TIANA F",
+        "load_date_label": "Yükleme Tarihi",
+        "load_time_label": "Yükleme Saati",
+        "load_save_button": "GEMİYE YÜKLEME KAYDET",
+        "load_saved": "✓ Gemiye yükleme kaydedildi:",
+        "recent_loads": "Son Gemiye Yüklemeler",
+        "no_loads_yet": "Henüz kayıtlı gemiye yükleme yok.",
+        "load_report_header": "**Tarih Bazlı Yükleme Raporu**",
+        "load_report_caption": "Bir tarih aralığı seçip o dönemde gemiye yüklenen konteynerleri Excel olarak indirin.",
+        "load_report_empty": "Rapor oluşturmak için önce en az bir yükleme kaydı olmalı.",
+        "load_records_found": "Seçilen aralıkta {count} yükleme kaydı bulundu.",
+
+        "footer_text": "⚓ ALPORT BANJUL &nbsp;·&nbsp; KONTEYNER TAKİP SİSTEMİ &nbsp;·&nbsp; OPERASYON",
+
+        "movement_gate": "Kapı Çıkışı",
+        "movement_load": "Gemiye Yükleme",
+        "record_count_suffix": "kayıt",
+    },
+    "en": {
+        "high_contrast": "High Contrast",
+        "high_contrast_help": "Improves readability in bright sunlight or low-visibility conditions.",
+        "language_label": "🌐 Language",
+
+        "hero_brand": "PORT OPERATIONS",
+        "hero_title": "Container Tracking & Verification System",
+        "hero_subtitle": "The last checkpoint before vessel loading: verify the container number, shipping line, and yard record on one screen.",
+        "hero_badge": "⚓ OPERATIONAL VERIFICATION",
+
+        "db_error": "Cannot access the container data file.",
+        "db_loading": "Loading database...",
+        "db_load_error": "Failed to load the container database.",
+
+        "stat_current_record": "Current Records",
+        "stat_container_unit": "Containers",
+        "stat_last_update": "Last Updated",
+
+        "dashboard_title": "📊 Yard Inventory Dashboard",
+        "dashboard_subtitle": "Distribution of containers currently in the yard",
+        "dash_full_20": "Full 20'",
+        "dash_empty_20": "Empty 20'",
+        "dash_full_40": "Full 40'",
+        "dash_empty_40": "Empty 40'",
+        "dash_total_teu": "Total TEU",
+        "legend_other": "Other / Unclassified",
+        "dash_other_note": "containers could not be included in the 20'/40' breakdown above because their size (SIZE) or status (FULL-MTY) data is missing or in an unrecognized format, but they are still included in the total TEU count.",
+
+        "line_not_selected": "No line selected",
+
+        "tab_single": "⚓ Single Search",
+        "tab_batch": "📋 Batch Verification",
+        "tab_gate": "🚪 Gate Exit",
+        "tab_load": "🚢 Vessel Loading",
+
+        "single_header": "Container Verification",
+        "single_caption": "Select the loading line and enter the container number.",
+        "history_label": "RECENT SEARCHES",
+        "line_select_label": "Loading Line",
+        "camera_expander": "📷 Read Number with Camera",
+        "ocr_unavailable": "OCR libraries are not installed. This feature requires `pytesseract`, `Pillow` packages and the `tesseract-ocr` engine on the server.",
+        "camera_hint": "Photograph the number on the container as closely as possible, framing only that text area — not the whole container body, just the letters/digits. This significantly improves accuracy.",
+        "camera_input_label": "Take a photo of the container number",
+        "camera_reading": "Reading photo...",
+        "checking": "Checking...",
+        "ocr_no_match": "Couldn't read the number. Try again with a closer, sharper, straight-on photo of just the number.",
+        "ocr_pick_suggestion": "Select the correct one from the guesses below — if no exact match was found, the closest real records in the database were suggested:",
+        "ocr_found_in_db": "Found in database",
+        "ocr_not_in_db": "Not an exact match in the database — OCR guess, check carefully",
+        "ocr_manual_fix": "If it's wrong, you can correct it manually in the field below.",
+        "container_number_label": "Container Number",
+        "container_number_placeholder": "Example: SEKU6920313",
+        "format_hint_empty": "Enter the container number (letters + digits)",
+        "format_valid": "Format valid",
+        "format_invalid_expected": "Format may be invalid — expected: 4 letters + 7 digits (e.g. MSKU1234567) — entered:",
+        "verify_button": "VERIFY CONTAINER",
+        "enter_container_warning": "Please enter a container number.",
+        "invalid_format_title": "INVALID FORMAT",
+        "invalid_format_desc": "The container number doesn't match the standard format (4 letters + 7 digits). Please check again.",
+        "not_found_title": "CONTAINER NOT FOUND",
+        "not_found_desc": "This container is not in the current database.",
+        "do_not_load": "DO NOT LOAD",
+        "duplicate_error": "Multiple records found for this container.",
+        "duplicate_warning": "Confirm with the Operations Department before loading.",
+        "wrong_line_title": "WRONG SHIPPING LINE",
+        "registered_line_label": "CONTAINER'S REGISTERED LINE",
+        "selected_line_label": "LINE SELECTED FOR LOADING",
+        "do_not_load_this": "DO NOT LOAD THIS CONTAINER",
+        "load_check_success": "✓ Loading Check Passed",
+        "load_check_success_sub": "The container matches the selected shipping line.",
+        "container_found": "✓ Container Found",
+        "container_found_sub": "The container is registered in the current database.",
+        "verified_pill": "✓ Verified",
+        "container_number_result_label": "CONTAINER NUMBER",
+        "shipping_line_label": "SHIPPING LINE",
+        "copy_caption": "Click the icon in the top-right of the box to copy the number",
+        "size_label": "Size",
+        "type_label": "Container Type",
+        "status_label": "Status",
+        "area_label": "Yard / Location",
+        "vessel_label": "Vessel",
+        "voyage_label": "Voyage",
+        "operation_details": "Operation Details",
+        "imo_class_label": "**IMO Class:**",
+        "discharge_date_label": "**Discharge Date:**",
+
+        "batch_header": "Batch Container Verification",
+        "batch_caption": "Paste one container number per line (you can copy-paste from a loading list).",
+        "batch_line_label": "Loading Line (optional)",
+        "batch_numbers_label": "Container Numbers",
+        "batch_placeholder": "MSKU1234567\nTCLU7654321\nCMAU9988776\n...",
+        "batch_verify_button": "VERIFY ALL",
+        "batch_enter_warning": "Please enter at least one container number.",
+        "batch_checking": "containers being checked...",
+        "batch_repeat": "Repeated within this list",
+        "batch_invalid": "Invalid format",
+        "batch_not_found": "Not in database — DO NOT LOAD",
+        "batch_duplicate": "Multiple records — confirmation needed",
+        "batch_wrong_line": "Registered line: {line} (selected: {selected}) — DO NOT LOAD",
+        "batch_ok_count": "OK",
+        "batch_bad_count": "Issues",
+        "batch_total": "Total",
+
+        "gate_header": "Gate Exit Entry",
+        "gate_caption": "Record containers leaving the yard here — the yard stock is deducted automatically.",
+        "gate_today": "Exited Today",
+        "gate_total": "Total Gate Exits",
+        "yard_remaining": "Remaining in Yard",
+        "gate_save_header": "**Record Exit**",
+        "gate_note_label": "Vehicle Plate / Note (optional)",
+        "gate_note_placeholder": "E.g. BJL 1234",
+        "gate_date_label": "Exit Date",
+        "gate_time_label": "Exit Time",
+        "already_has_movement": "This container already has a movement record:",
+        "not_in_db_but_ok": "This container was not found in the current database, but it can still be recorded:",
+        "invalid_format_short": "Format may be invalid:",
+        "gate_save_button": "RECORD GATE EXIT",
+        "gate_saved": "✓ Gate exit recorded:",
+        "recent_gate_exits": "Recent Gate Exits",
+        "no_gate_exits_yet": "No gate exits recorded yet.",
+        "undo_last": "↺ Undo Last Entry",
+        "undo_help": "Deletes the most recently added movement record (applies to all movement types).",
+        "undone": "Undone:",
+        "gate_report_header": "**Date-Based Gate Exit Report**",
+        "gate_report_caption": "Select a date range and download the containers that exited during that period as Excel.",
+        "gate_report_empty": "You need at least one gate exit record to generate a report.",
+        "date_range_label": "Date Range",
+        "gate_records_found": "Found {count} gate exit records in the selected range.",
+        "excel_download": "📥 Download as Excel",
+        "movements_persistence_note": "⚠ Note: Movement records are stored in a CSV file on the server. If your hosting service (e.g. Streamlit Cloud) resets the file system on every redeploy, records may be lost — it's recommended to regularly download and back up the Excel report during important periods.",
+
+        "load_header": "Vessel Loading Entry",
+        "load_caption": "Record containers loaded onto vessels here — the yard stock is deducted automatically.",
+        "load_today": "Loaded Today",
+        "load_total": "Total Loaded",
+        "load_save_header": "**Record Loading**",
+        "load_note_label": "Vessel Name / Note (optional)",
+        "load_note_placeholder": "E.g. MSC TIANA F",
+        "load_date_label": "Loading Date",
+        "load_time_label": "Loading Time",
+        "load_save_button": "RECORD VESSEL LOADING",
+        "load_saved": "✓ Vessel loading recorded:",
+        "recent_loads": "Recent Vessel Loadings",
+        "no_loads_yet": "No vessel loadings recorded yet.",
+        "load_report_header": "**Date-Based Loading Report**",
+        "load_report_caption": "Select a date range and download the containers loaded during that period as Excel.",
+        "load_report_empty": "You need at least one loading record to generate a report.",
+        "load_records_found": "Found {count} loading records in the selected range.",
+
+        "footer_text": "⚓ ALPORT BANJUL &nbsp;·&nbsp; CONTAINER TRACKING SYSTEM &nbsp;·&nbsp; OPERATIONS",
+
+        "movement_gate": "Gate Exit",
+        "movement_load": "Vessel Loading",
+        "record_count_suffix": "records",
+    },
+}
+
+
+def t(key, **kwargs):
+    """Aktif dile göre çeviriyi döndürür; anahtar bulunamazsa anahtarın kendisini döndürür."""
+
+    lang = st.session_state.get("language", "tr")
+    text = TRANSLATIONS.get(lang, TRANSLATIONS["tr"]).get(key, TRANSLATIONS["tr"].get(key, key))
+    if kwargs:
+        try:
+            return text.format(**kwargs)
+        except Exception:
+            return text
+    return text
+
+
+def movement_label(internal_value):
+    """Hareket türü kodunu (dahili olarak her zaman Türkçe saklanır) aktif dilde gösterir."""
+
+    mapping = {
+        "Kapı Çıkışı": t("movement_gate"),
+        "Gemiye Yükleme": t("movement_load"),
+    }
+    return mapping.get(internal_value, internal_value)
+
+
+def localize_movements_display(movements_slice):
+    """Hareket kayıtları tablosunu ekranda gösterirken sütun adlarını ve
+    HAREKET değerlerini aktif dile çevirir (CSV'deki asıl veriyi değiştirmez)."""
+
+    if movements_slice.empty:
+        return movements_slice
+
+    display = movements_slice.copy()
+    display["HAREKET"] = display["HAREKET"].apply(movement_label)
+
+    if st.session_state.get("language") == "en":
+        display = display.rename(columns={
+            "KONTEYNER": "CONTAINER",
+            "HAREKET": "MOVEMENT",
+            "TARIH": "DATE",
+            "NOT": "NOTE",
+        })
+
+    return display
+
+
+
 # CSS — kurumsal, açık zeminli operasyon paneli
 # =========================================================
 
@@ -1290,13 +1655,26 @@ def apply_ocr_guess(value):
 # ÜST ARAÇ ÇUBUĞU
 # =========================================================
 
-toolbar_col = st.columns([5, 2])[1]
+lang_col, contrast_col = st.columns([3, 3])
 
-with toolbar_col:
+with lang_col:
+    lang_choice = st.selectbox(
+        t("language_label"),
+        options=["tr", "en"],
+        format_func=lambda x: "🇹🇷 Türkçe" if x == "tr" else "🇬🇧 English",
+        index=0 if st.session_state.language == "tr" else 1,
+        key="language_select",
+        label_visibility="collapsed"
+    )
+    if lang_choice != st.session_state.language:
+        st.session_state.language = lang_choice
+        st.rerun()
+
+with contrast_col:
     st.toggle(
-        "Yüksek Kontrast",
+        t("high_contrast"),
         key="high_contrast",
-        help="Güneş ışığı altında veya düşük görüş koşullarında okunabilirliği artırır."
+        help=t("high_contrast_help")
     )
 
 
@@ -1313,19 +1691,17 @@ st.html(f"""
             <img src="data:image/jpeg;base64,{LOGO_BASE64}" alt="ALPORT Banjul logosu" />
         </div>
 
-        <div class="hero-brand">LİMAN OPERASYONLARI</div>
+        <div class="hero-brand">{t('hero_brand')}</div>
 
-        <div class="hero-title">Konteyner Takip ve Doğrulama Sistemi</div>
+        <div class="hero-title">{t('hero_title')}</div>
 
         <div class="hero-rule"></div>
 
         <div class="hero-subtitle">
-            Gemi yüklemesinden önceki son kontrol noktası:
-            konteyner numarası, shipping line ve saha kaydını
-            tek ekranda doğrulayın.
+            {t('hero_subtitle')}
         </div>
 
-        <div class="hero-badge">⚓ &nbsp;OPERASYONEL DOĞRULAMA</div>
+        <div class="hero-badge">⚓ {t('hero_badge')}</div>
 
     </div>
 
@@ -1349,15 +1725,15 @@ st.html(f"""
 # =========================================================
 
 if not os.path.exists(EXCEL_FILE):
-    st.error("Konteyner veri dosyasına ulaşılamıyor.")
+    st.error(t("db_error"))
     st.stop()
 
 try:
-    with st.spinner("Veritabanı yükleniyor..."):
+    with st.spinner(t("db_loading")):
         modified_time = os.path.getmtime(EXCEL_FILE)
         df = load_database(EXCEL_FILE, modified_time)
 except Exception:
-    st.error("Konteyner veritabanı yüklenemedi.")
+    st.error(t("db_load_error"))
     st.stop()
 
 update_time = datetime.fromtimestamp(modified_time).strftime("%d.%m.%Y • %H:%M")
@@ -1371,20 +1747,20 @@ stat1, stat2 = st.columns(2)
 
 with stat1:
     st.html(f"""
-        <div class="stat-card" role="status" aria-label="Güncel kayıt sayısı">
+        <div class="stat-card" role="status" aria-label="{t('stat_current_record')}">
             <div class="stat-accent-blue"></div>
             <div class="stat-icon">▣</div>
-            <div class="stat-label">Güncel Kayıt</div>
-            <div class="stat-value">{len(df):,} Konteyner</div>
+            <div class="stat-label">{t('stat_current_record')}</div>
+            <div class="stat-value">{len(df):,} {t('stat_container_unit')}</div>
         </div>
     """)
 
 with stat2:
     st.html(f"""
-        <div class="stat-card" role="status" aria-label="Son güncelleme zamanı">
+        <div class="stat-card" role="status" aria-label="{t('stat_last_update')}">
             <div class="stat-accent-green"></div>
             <div class="stat-icon">◷</div>
-            <div class="stat-label">Son Güncelleme</div>
+            <div class="stat-label">{t('stat_last_update')}</div>
             <div class="stat-value">{update_time}</div>
         </div>
     """)
@@ -1401,10 +1777,10 @@ _moved_out_for_dashboard = get_moved_out_numbers(_movements_for_dashboard)
 _remaining_for_dashboard = df[~df["_SEARCH"].isin(_moved_out_for_dashboard)]
 _dash = compute_yard_dashboard(_remaining_for_dashboard)
 
-st.html("""
+st.html(f"""
 <div class="dashboard-header">
-    <div class="dashboard-title">📊 Liman Envanter Panosu</div>
-    <div class="dashboard-subtitle">Şu an sahada bulunan konteynerlerin dağılımı</div>
+    <div class="dashboard-title">{t('dashboard_title')}</div>
+    <div class="dashboard-subtitle">{t('dashboard_subtitle')}</div>
 </div>
 """)
 
@@ -1415,7 +1791,7 @@ with d1:
         <div class="dash-card">
             <div class="dash-card-accent" style="background:{LINE_COLORS.get('OBT', '#1F6E4A')};"></div>
             <div class="dash-icon">📦</div>
-            <div class="dash-label">Dolu 20'</div>
+            <div class="dash-label">{t('dash_full_20')}</div>
             <div class="dash-value">{_dash['dolu_20']:,}</div>
         </div>
     """)
@@ -1425,7 +1801,7 @@ with d2:
         <div class="dash-card">
             <div class="dash-card-accent" style="background:#9CA8B4;"></div>
             <div class="dash-icon">📭</div>
-            <div class="dash-label">Boş 20'</div>
+            <div class="dash-label">{t('dash_empty_20')}</div>
             <div class="dash-value">{_dash['bos_20']:,}</div>
         </div>
     """)
@@ -1435,7 +1811,7 @@ with d3:
         <div class="dash-card">
             <div class="dash-card-accent" style="background:var(--navy);"></div>
             <div class="dash-icon">📦</div>
-            <div class="dash-label">Dolu 40'</div>
+            <div class="dash-label">{t('dash_full_40')}</div>
             <div class="dash-value">{_dash['dolu_40']:,}</div>
         </div>
     """)
@@ -1445,7 +1821,7 @@ with d4:
         <div class="dash-card">
             <div class="dash-card-accent" style="background:#C7CFD8;"></div>
             <div class="dash-icon">📭</div>
-            <div class="dash-label">Boş 40'</div>
+            <div class="dash-label">{t('dash_empty_40')}</div>
             <div class="dash-value">{_dash['bos_40']:,}</div>
         </div>
     """)
@@ -1454,7 +1830,7 @@ with d5:
     st.html(f"""
         <div class="dash-card dash-teu-card">
             <div class="dash-icon">⚓</div>
-            <div class="dash-label">Toplam TEU</div>
+            <div class="dash-label">{t('dash_total_teu')}</div>
             <div class="dash-value">{_dash['total_teu']:,.1f}</div>
         </div>
     """)
@@ -1476,19 +1852,16 @@ st.html(f"""
         <div class="composition-segment" style="width:{_seg_other}%; background:#D4A72C;"></div>
     </div>
     <div class="composition-legend">
-        <div class="legend-item"><span class="legend-dot" style="background:#1F6E4A;"></span> Dolu 20'</div>
-        <div class="legend-item"><span class="legend-dot" style="background:#9CA8B4;"></span> Boş 20'</div>
-        <div class="legend-item"><span class="legend-dot" style="background:#0F2A44;"></span> Dolu 40'</div>
-        <div class="legend-item"><span class="legend-dot" style="background:#C7CFD8;"></span> Boş 40'</div>
-        <div class="legend-item"><span class="legend-dot" style="background:#D4A72C;"></span> Diğer / Sınıflandırılamayan</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#1F6E4A;"></span> {t('dash_full_20')}</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#9CA8B4;"></span> {t('dash_empty_20')}</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#0F2A44;"></span> {t('dash_full_40')}</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#C7CFD8;"></span> {t('dash_empty_40')}</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#D4A72C;"></span> {t('legend_other')}</div>
     </div>
 """)
 
 if _dash['other_count'] > 0:
-    st.caption(
-        f"ℹ {_dash['other_count']} konteyner boyut (SIZE) veya durum (FULL-MTY) bilgisi eksik/tanınmayan "
-        "bir formatta olduğu için yukarıdaki 20'/40' dağılımına dahil edilemedi, ancak toplam TEU hesabına dahildir."
-    )
+    st.caption(f"ℹ {_dash['other_count']} {t('dash_other_note')}")
 
 st.write("")
 
@@ -1503,7 +1876,7 @@ available_lines = sorted({
     if normalize_line(value) != "-"
 })
 
-line_options = ["Hat seçilmedi"] + available_lines
+line_options = [t("line_not_selected")] + available_lines
 
 
 # =========================================================
@@ -1511,7 +1884,7 @@ line_options = ["Hat seçilmedi"] + available_lines
 # =========================================================
 
 tab_single, tab_batch, tab_gate, tab_load = st.tabs(
-    ["⚓ Tekli Arama", "📋 Toplu Doğrulama", "🚪 Kapı Çıkışı", "🚢 Gemiye Yükleme"]
+    [t("tab_single"), t("tab_batch"), t("tab_gate"), t("tab_load")]
 )
 
 
@@ -1523,12 +1896,12 @@ with tab_single:
 
     with st.container(border=True):
 
-        st.subheader("Konteyner Doğrulama")
-        st.caption("Yükleme hattını seçin ve konteyner numarasını girin.")
+        st.subheader(t("single_header"))
+        st.caption(t("single_caption"))
 
         if st.session_state.search_history:
 
-            st.html('<div class="history-label">SON ARAMALAR</div>')
+            st.html(f'<div class="history-label">{t("history_label")}</div>')
 
             history_cols = st.columns(len(st.session_state.search_history))
 
@@ -1544,26 +1917,19 @@ with tab_single:
 
             st.write("")
 
-        selected_line = st.selectbox("Yükleme Hattı", line_options, key="single_line_select")
+        selected_line = st.selectbox(t("line_select_label"), line_options, key="single_line_select")
 
-        with st.expander("📷 Kamera ile Numara Oku"):
+        with st.expander(t("camera_expander")):
 
             if not OCR_AVAILABLE:
-                st.warning(
-                    "OCR kütüphaneleri kurulu değil. Bu özelliğin çalışması için sunucuda "
-                    "`pytesseract`, `Pillow` paketleri ve `tesseract-ocr` motoru kurulu olmalı."
-                )
+                st.warning(t("ocr_unavailable"))
             else:
-                st.caption(
-                    "Konteynerin üzerindeki numarayı olabildiğince yakından ve sadece o "
-                    "yazı alanı çerçeveye girecek şekilde fotoğraflayın — gövdenin geneli "
-                    "değil, sadece harf/rakamların olduğu bölüm. Bu, doğruluğu ciddi ölçüde artırır."
-                )
+                st.caption(t("camera_hint"))
 
-                camera_photo = st.camera_input("Konteyner numarasının fotoğrafını çekin", key="ocr_camera")
+                camera_photo = st.camera_input(t("camera_input_label"), key="ocr_camera")
 
                 if camera_photo is not None:
-                    with st.spinner("Fotoğraf okunuyor..."):
+                    with st.spinner(t("camera_reading")):
                         try:
                             ocr_candidates = read_container_from_image(camera_photo.getvalue())
                         except Exception:
@@ -1596,15 +1962,9 @@ with tab_single:
                     suggestions = suggestions[:4]
 
                     if not suggestions:
-                        st.warning(
-                            "Numarayı okuyamadım. Konteynerin sadece numara yazan kısmını "
-                            "yakından, net ve düz açıyla çerçeveleyip tekrar deneyin."
-                        )
+                        st.warning(t("ocr_no_match"))
                     else:
-                        st.caption(
-                            "Aşağıdaki tahminlerden doğru olanı seçin — birebir eşleşme "
-                            "bulunamadıysa veritabanındaki en yakın gerçek kayıtlar önerildi:"
-                        )
+                        st.caption(t("ocr_pick_suggestion"))
 
                         for idx, number in enumerate(suggestions):
                             is_known = number in known_numbers
@@ -1614,12 +1974,12 @@ with tab_single:
                                 line_name = normalize_line(clean_value(rec, "AGENT"))
                                 vessel_name = clean_value(rec, "VESSEL NAME")
                                 label = f"✓ {number}"
-                                caption = f"Veritabanında bulundu — {line_name}"
+                                caption = f"{t('ocr_found_in_db')} — {line_name}"
                                 if vessel_name != "-":
                                     caption += f" • {vessel_name}"
                             else:
                                 label = f"? {number}"
-                                caption = "Veritabanında birebir yok — OCR tahmini, dikkatli kontrol edin"
+                                caption = t("ocr_not_in_db")
 
                             st.button(
                                 label,
@@ -1630,11 +1990,11 @@ with tab_single:
                             )
                             st.caption(caption)
 
-                        st.caption("Yanlışsa aşağıdaki alana elle düzeltip devam edebilirsiniz.")
+                        st.caption(t("ocr_manual_fix"))
 
         container_input = st.text_input(
-            "Konteyner Numarası",
-            placeholder="Örnek: SEKU6920313",
+            t("container_number_label"),
+            placeholder=t("container_number_placeholder"),
             max_chars=20,
             key="container_query"
         )
@@ -1642,17 +2002,17 @@ with tab_single:
         live_normalized = normalize_container(container_input)
 
         if not live_normalized:
-            st.html('<div class="format-hint format-empty">Konteyner numarasını girin (harf + rakam)</div>')
+            st.html(f'<div class="format-hint format-empty">{t("format_hint_empty")}</div>')
         elif is_valid_format(live_normalized):
-            st.html(f'<div class="format-hint format-ok">✓ Format geçerli — {safe(live_normalized)}</div>')
+            st.html(f'<div class="format-hint format-ok">✓ {t("format_valid")} — {safe(live_normalized)}</div>')
         else:
             st.html(
-                f'<div class="format-hint format-bad">⚠ Format hatalı olabilir — beklenen: 4 harf + 7 rakam '
-                f'(örn. MSKU1234567) — girilen: {safe(live_normalized)}</div>'
+                f'<div class="format-hint format-bad">⚠ {t("format_invalid_expected")} '
+                f'{safe(live_normalized)}</div>'
             )
 
         search_clicked = st.button(
-            "KONTEYNERİ DOĞRULA",
+            t("verify_button"),
             type="primary",
             use_container_width=True,
             key="single_search_button"
@@ -1661,10 +2021,10 @@ with tab_single:
     if search_clicked:
 
         if not live_normalized:
-            st.warning("Lütfen konteyner numarası girin.")
+            st.warning(t("enter_container_warning"))
             st.stop()
 
-        with st.spinner("Kontrol ediliyor..."):
+        with st.spinner(t("checking")):
             status, record_or_result, normalized = lookup_container(df, container_input)
 
         push_history(normalized, status)
@@ -1673,11 +2033,10 @@ with tab_single:
             st.html(f"""
                 <div class="not-found" role="alert">
                     <div style="font-size:38px; margin-bottom:8px;">⚠</div>
-                    <div class="not-found-title">GEÇERSİZ FORMAT</div>
+                    <div class="not-found-title">{t('invalid_format_title')}</div>
                     <div class="not-found-number">{safe(normalized)}</div>
                     <div style="color:#8A3E3E; margin-top:10px; font-size:13px;">
-                        Konteyner numarası standart formata (4 harf + 7 rakam) uymuyor.
-                        Lütfen tekrar kontrol edin.
+                        {t('invalid_format_desc')}
                     </div>
                 </div>
             """)
@@ -1686,18 +2045,18 @@ with tab_single:
             st.html(f"""
                 <div class="not-found" role="alert">
                     <div style="font-size:38px; margin-bottom:8px;">ⓧ</div>
-                    <div class="not-found-title">KONTEYNER BULUNAMADI</div>
+                    <div class="not-found-title">{t('not_found_title')}</div>
                     <div class="not-found-number">{safe(normalized)}</div>
                     <div style="color:#8A3E3E; margin-top:10px; font-size:13px;">
-                        Bu konteyner güncel veritabanında bulunmuyor.
+                        {t('not_found_desc')}
                     </div>
-                    <div class="not-found-stop">YÜKLEME YAPMAYIN</div>
+                    <div class="not-found-stop">{t('do_not_load')}</div>
                 </div>
             """)
 
         elif status == "duplicate":
-            st.error("Aynı konteyner için birden fazla kayıt bulundu.")
-            st.warning("Yükleme öncesinde Operasyon Departmanı ile teyit edin.")
+            st.error(t("duplicate_error"))
+            st.warning(t("duplicate_warning"))
 
         else:
             record = record_or_result
@@ -1716,7 +2075,7 @@ with tab_single:
             line_color = LINE_COLORS.get(shipping_line, "#A6821E")
 
             wrong_line = (
-                selected_line != "Hat seçilmedi"
+                selected_line != t("line_not_selected")
                 and selected_line != shipping_line
             )
 
@@ -1724,72 +2083,72 @@ with tab_single:
                 st.html(f"""
                     <div class="danger-card" role="alert">
                         <div class="danger-symbol">!</div>
-                        <div class="danger-title">YANLIŞ SHIPPING LINE</div>
+                        <div class="danger-title">{t('wrong_line_title')}</div>
                         <div class="danger-container">{safe(container)}</div>
-                        <div class="danger-info">KONTEYNERİN KAYITLI HATTI</div>
+                        <div class="danger-info">{t('registered_line_label')}</div>
                         <div class="danger-line">{safe(shipping_line)}</div>
-                        <div class="danger-info">YÜKLEME İÇİN SEÇİLEN HAT</div>
+                        <div class="danger-info">{t('selected_line_label')}</div>
                         <div class="danger-line">{safe(selected_line)}</div>
-                        <img class="danger-image" src="data:image/png;base64,{FIST_BASE64}" alt="Uyarı" />
-                        <div class="danger-stop">BU KONTEYNERİ YÜKLEMEYİN</div>
+                        <img class="danger-image" src="data:image/png;base64,{FIST_BASE64}" alt="Warning" />
+                        <div class="danger-stop">{t('do_not_load_this')}</div>
                     </div>
                 """)
 
             else:
-                if selected_line != "Hat seçilmedi":
-                    st.html("""
+                if selected_line != t("line_not_selected"):
+                    st.html(f"""
                         <div class="success-banner" role="status">
-                            <div class="success-title">✓ Yükleme Kontrolü Başarılı</div>
-                            <div class="success-subtitle">Konteyner seçilen shipping line ile eşleşiyor.</div>
+                            <div class="success-title">{t('load_check_success')}</div>
+                            <div class="success-subtitle">{t('load_check_success_sub')}</div>
                         </div>
                     """)
                 else:
-                    st.html("""
+                    st.html(f"""
                         <div class="success-banner" role="status">
-                            <div class="success-title">✓ Konteyner Bulundu</div>
-                            <div class="success-subtitle">Konteyner güncel veritabanında kayıtlı.</div>
+                            <div class="success-title">{t('container_found')}</div>
+                            <div class="success-subtitle">{t('container_found_sub')}</div>
                         </div>
                     """)
 
                 st.html(f"""
                     <div class="container-result">
-                        <div class="status-pill status-pill-ok">✓ Doğrulandı</div>
+                        <div class="status-pill status-pill-ok">{t('verified_pill')}</div>
                         <div class="container-accent" style="background:{line_color};"></div>
-                        <div class="result-label">KONTEYNER NUMARASI</div>
+                        <div class="result-label">{t('container_number_result_label')}</div>
                         <div class="result-number">{safe(container)}</div>
                         <div class="result-divider"></div>
-                        <div class="result-label">SHIPPING LINE</div>
+                        <div class="result-label">{t('shipping_line_label')}</div>
                         <div class="result-line" style="color:{line_color};">{safe(shipping_line)}</div>
                     </div>
                 """)
 
-                st.html('<div class="copy-caption">Numarayı kopyalamak için kutunun sağ üstündeki simgeye tıklayın</div>')
+                st.html(f'<div class="copy-caption">{t("copy_caption")}</div>')
                 st.code(container, language=None)
 
                 c1, c2 = st.columns(2)
                 with c1:
-                    st.metric("Boyut", size)
+                    st.metric(t("size_label"), size)
                 with c2:
-                    st.metric("Konteyner Tipi", container_type)
+                    st.metric(t("type_label"), container_type)
 
                 c3, c4 = st.columns(2)
                 with c3:
-                    st.metric("Durum", status_val)
+                    st.metric(t("status_label"), status_val)
                 with c4:
-                    st.metric("Saha / Konum", location)
+                    st.metric(t("area_label"), location)
 
                 c5, c6 = st.columns(2)
                 with c5:
-                    st.metric("Gemi", vessel)
+                    st.metric(t("vessel_label"), vessel)
                 with c6:
-                    st.metric("Sefer", voyage)
+                    st.metric(t("voyage_label"), voyage)
 
                 if imo_class != "-" or discharge_date != "-":
-                    with st.expander("Operasyon Detayları"):
+                    with st.expander(t("operation_details")):
                         if imo_class != "-":
-                            st.write("**IMO Sınıfı:**", imo_class)
+                            st.write(t("imo_class_label"), imo_class)
                         if discharge_date != "-":
-                            st.write("**Tahliye Tarihi:**", discharge_date)
+                            st.write(t("discharge_date_label"), discharge_date)
 
 
 # ---------------------------------------------------------
@@ -1800,20 +2159,20 @@ with tab_batch:
 
     with st.container(border=True):
 
-        st.subheader("Toplu Konteyner Doğrulama")
-        st.caption("Her satıra bir konteyner numarası gelecek şekilde yapıştırın (yükleme listesinden kopyala-yapıştır yapabilirsiniz).")
+        st.subheader(t("batch_header"))
+        st.caption(t("batch_caption"))
 
-        batch_line = st.selectbox("Yükleme Hattı (opsiyonel)", line_options, key="batch_line_select")
+        batch_line = st.selectbox(t("batch_line_label"), line_options, key="batch_line_select")
 
         batch_text = st.text_area(
-            "Konteyner Numaraları",
-            placeholder="MSKU1234567\nTCLU7654321\nCMAU9988776\n...",
+            t("batch_numbers_label"),
+            placeholder=t("batch_placeholder"),
             height=180,
             key="batch_query"
         )
 
         batch_clicked = st.button(
-            "HEPSİNİ DOĞRULA",
+            t("batch_verify_button"),
             type="primary",
             use_container_width=True,
             key="batch_search_button"
@@ -1824,10 +2183,10 @@ with tab_batch:
         raw_lines = [line.strip() for line in batch_text.splitlines() if line.strip()]
 
         if not raw_lines:
-            st.warning("Lütfen en az bir konteyner numarası girin.")
+            st.warning(t("batch_enter_warning"))
             st.stop()
 
-        with st.spinner(f"{len(raw_lines)} konteyner kontrol ediliyor..."):
+        with st.spinner(f"{len(raw_lines)} {t('batch_checking')}"):
 
             seen_in_batch = {}
             rows = []
@@ -1839,20 +2198,20 @@ with tab_batch:
                     rows.append({
                         "number": normalized,
                         "status": "repeat_in_list",
-                        "detail": "Bu liste içinde tekrar ediyor"
+                        "detail": t("batch_repeat")
                     })
                     continue
 
                 seen_in_batch[normalized] = True
 
                 if status == "invalid":
-                    rows.append({"number": normalized or raw, "status": "invalid", "detail": "Geçersiz format"})
+                    rows.append({"number": normalized or raw, "status": "invalid", "detail": t("batch_invalid")})
 
                 elif status == "not_found":
-                    rows.append({"number": normalized, "status": "not_found", "detail": "Veritabanında yok — YÜKLEMEYİN"})
+                    rows.append({"number": normalized, "status": "not_found", "detail": t("batch_not_found")})
 
                 elif status == "duplicate":
-                    rows.append({"number": normalized, "status": "duplicate", "detail": "Birden fazla kayıt — teyit gerekli"})
+                    rows.append({"number": normalized, "status": "duplicate", "detail": t("batch_duplicate")})
 
                 else:
                     record = record_or_result
@@ -1860,7 +2219,7 @@ with tab_batch:
                     vessel = clean_value(record, "VESSEL NAME")
 
                     wrong_line = (
-                        batch_line != "Hat seçilmedi"
+                        batch_line != t("line_not_selected")
                         and batch_line != shipping_line
                     )
 
@@ -1868,7 +2227,7 @@ with tab_batch:
                         rows.append({
                             "number": normalized,
                             "status": "wrong_line",
-                            "detail": f"Kayıtlı hat: {shipping_line} (seçilen: {batch_line}) — YÜKLEMEYİN"
+                            "detail": t("batch_wrong_line", line=shipping_line, selected=batch_line)
                         })
                     else:
                         rows.append({
@@ -1885,13 +2244,13 @@ with tab_batch:
         st.html(f"""
             <div class="batch-summary">
                 <div class="batch-pill" style="background:#E9F7EF; color:#157347;">
-                    ✓ {ok_count} Uygun
+                    ✓ {ok_count} {t('batch_ok_count')}
                 </div>
                 <div class="batch-pill" style="background:#FDECEC; color:#B91C1C;">
-                    ✗ {bad_count} Sorunlu
+                    ✗ {bad_count} {t('batch_bad_count')}
                 </div>
                 <div class="batch-pill" style="background:#EEF2F6; color:#0F2A44;">
-                    Toplam {len(rows)}
+                    {t('batch_total')} {len(rows)}
                 </div>
             </div>
         """)
@@ -1934,8 +2293,8 @@ with tab_gate:
     today_str = datetime.now().strftime("%d.%m.%Y")
     gate_out_today = gate_out_all[gate_out_all["TARIH"].str.startswith(today_str)] if not gate_out_all.empty else gate_out_all
 
-    st.subheader("Kapı Çıkışı Girişi")
-    st.caption("Sahadan çıkan konteynerleri buradan kaydedin — limandaki stoktan otomatik düşer.")
+    st.subheader(t("gate_header"))
+    st.caption(t("gate_caption"))
 
     g1, g2, g3 = st.columns(3)
 
@@ -1944,7 +2303,7 @@ with tab_gate:
             <div class="stat-card">
                 <div class="stat-accent-blue"></div>
                 <div class="stat-icon">🚪</div>
-                <div class="stat-label">Bugün Çıkan</div>
+                <div class="stat-label">{t('gate_today')}</div>
                 <div class="stat-value">{len(gate_out_today):,}</div>
             </div>
         """)
@@ -1954,7 +2313,7 @@ with tab_gate:
             <div class="stat-card">
                 <div class="stat-accent-blue"></div>
                 <div class="stat-icon">▣</div>
-                <div class="stat-label">Toplam Kapı Çıkışı</div>
+                <div class="stat-label">{t('gate_total')}</div>
                 <div class="stat-value">{len(gate_out_all):,}</div>
             </div>
         """)
@@ -1964,7 +2323,7 @@ with tab_gate:
             <div class="stat-card">
                 <div class="stat-accent-green"></div>
                 <div class="stat-icon">◷</div>
-                <div class="stat-label">Limanda Kalan</div>
+                <div class="stat-label">{t('yard_remaining')}</div>
                 <div class="stat-value">{remaining_count:,}</div>
             </div>
         """)
@@ -1977,22 +2336,22 @@ with tab_gate:
 
     with st.container(border=True):
 
-        st.markdown("**Çıkış Kaydet**")
+        st.markdown(t("gate_save_header"))
 
         gc1, gc2 = st.columns([2, 1])
 
         with gc1:
             gate_container_input = st.text_input(
-                "Konteyner Numarası",
-                placeholder="Örnek: SEKU6920313",
+                t("container_number_label"),
+                placeholder=t("container_number_placeholder"),
                 max_chars=20,
                 key="gate_container_query"
             )
 
         with gc2:
             gate_note = st.text_input(
-                "Araç Plakası / Not (opsiyonel)",
-                placeholder="Örn. BJL 1234",
+                t("gate_note_label"),
+                placeholder=t("gate_note_placeholder"),
                 key="gate_note_input"
             )
 
@@ -2000,14 +2359,14 @@ with tab_gate:
 
         with gd1:
             gate_date_val = st.date_input(
-                "Çıkış Tarihi",
+                t("gate_date_label"),
                 value=datetime.now().date(),
                 key="gate_date_input"
             )
 
         with gd2:
             gate_time_val = st.time_input(
-                "Çıkış Saati",
+                t("gate_time_label"),
                 value=datetime.now().time().replace(second=0, microsecond=0),
                 key="gate_time_input"
             )
@@ -2017,23 +2376,23 @@ with tab_gate:
         if gate_normalized:
             if gate_normalized in moved_out:
                 st.html(
-                    f'<div class="format-hint format-bad">⚠ Bu konteyner için zaten bir hareket kaydı var: '
+                    f'<div class="format-hint format-bad">⚠ {t("already_has_movement")} '
                     f'{safe(gate_normalized)}</div>'
                 )
             elif gate_normalized not in set(df["_SEARCH"]):
                 st.html(
-                    f'<div class="format-hint format-bad">⚠ Bu konteyner mevcut veritabanında bulunamadı, '
-                    f'yine de kaydedilebilir: {safe(gate_normalized)}</div>'
+                    f'<div class="format-hint format-bad">⚠ {t("not_in_db_but_ok")} '
+                    f'{safe(gate_normalized)}</div>'
                 )
             elif not is_valid_format(gate_normalized):
                 st.html(
-                    f'<div class="format-hint format-bad">⚠ Format hatalı olabilir: {safe(gate_normalized)}</div>'
+                    f'<div class="format-hint format-bad">⚠ {t("invalid_format_short")} {safe(gate_normalized)}</div>'
                 )
             else:
-                st.html(f'<div class="format-hint format-ok">✓ Format geçerli — {safe(gate_normalized)}</div>')
+                st.html(f'<div class="format-hint format-ok">✓ {t("format_valid")} — {safe(gate_normalized)}</div>')
 
         gate_save_clicked = st.button(
-            "KAPI ÇIKIŞI KAYDET",
+            t("gate_save_button"),
             type="primary",
             use_container_width=True,
             key="save_gate_button"
@@ -2041,11 +2400,11 @@ with tab_gate:
 
         if gate_save_clicked:
             if not gate_normalized:
-                st.warning("Lütfen konteyner numarası girin.")
+                st.warning(t("enter_container_warning"))
             else:
                 gate_timestamp = f"{gate_date_val.strftime('%d.%m.%Y')} {gate_time_val.strftime('%H:%M')}"
                 save_movement(gate_normalized, "Kapı Çıkışı", gate_note, movement_datetime=gate_timestamp)
-                st.success(f"✓ Kapı çıkışı kaydedildi: {gate_normalized} — {gate_timestamp}")
+                st.success(f"{t('gate_saved')} {gate_normalized} — {gate_timestamp}")
                 st.rerun()
 
     st.write("")
@@ -2054,24 +2413,24 @@ with tab_gate:
     # SON ÇIKIŞLAR
     # -------------------------------------------------
 
-    with st.expander(f"Son Kapı Çıkışları ({len(gate_out_all)} kayıt)", expanded=False):
+    with st.expander(f"{t('recent_gate_exits')} ({len(gate_out_all)} {t('record_count_suffix')})", expanded=False):
 
         if gate_out_all.empty:
-            st.caption("Henüz kayıtlı kapı çıkışı yok.")
+            st.caption(t("no_gate_exits_yet"))
         else:
             recent_gate = gate_out_all.iloc[::-1].head(20)
-            st.dataframe(recent_gate, use_container_width=True, hide_index=True)
+            st.dataframe(localize_movements_display(recent_gate), use_container_width=True, hide_index=True)
 
             undo_gate_clicked = st.button(
-                "↺ Son Kaydı Geri Al",
+                t("undo_last"),
                 key="undo_gate_button",
-                help="Yanlışlıkla eklenen son hareket kaydını siler (tüm hareket türleri için geçerlidir)."
+                help=t("undo_help")
             )
 
             if undo_gate_clicked:
                 undone = undo_last_movement()
                 if undone:
-                    st.success(f"Geri alındı: {undone['KONTEYNER']} — {undone['HAREKET']}")
+                    st.success(f"{t('undone')} {undone['KONTEYNER']} — {movement_label(undone['HAREKET'])}")
                     st.rerun()
 
     # -------------------------------------------------
@@ -2080,20 +2439,20 @@ with tab_gate:
 
     with st.container(border=True):
 
-        st.markdown("**Tarih Bazlı Kapı Çıkışı Raporu**")
-        st.caption("Bir tarih aralığı seçip o dönemde çıkış yapan konteynerleri Excel olarak indirin.")
+        st.markdown(t("gate_report_header"))
+        st.caption(t("gate_report_caption"))
 
         movements_dated = movements_with_parsed_date(movements)
         gate_dated = movements_dated[movements_dated["HAREKET"] == "Kapı Çıkışı"] if not movements_dated.empty else movements_dated
 
         if gate_dated.empty or gate_dated["TARIH_DT"].isna().all():
-            st.caption("Rapor oluşturmak için önce en az bir kapı çıkışı kaydı olmalı.")
+            st.caption(t("gate_report_empty"))
         else:
             min_date = gate_dated["TARIH_DT"].min().date()
             max_date = gate_dated["TARIH_DT"].max().date()
 
             date_range = st.date_input(
-                "Tarih Aralığı",
+                t("date_range_label"),
                 value=(min_date, max_date),
                 min_value=min_date,
                 max_value=max_date,
@@ -2112,23 +2471,19 @@ with tab_gate:
             filtered_gate = gate_dated[mask].drop(columns=["TARIH_DT"])
             filtered_gate = enrich_movements_with_container_info(filtered_gate, df)
 
-            st.caption(f"Seçilen aralıkta {len(filtered_gate)} kapı çıkışı kaydı bulundu.")
+            st.caption(t("gate_records_found", count=len(filtered_gate)))
 
             if not filtered_gate.empty:
                 excel_bytes = build_excel_bytes(filtered_gate, sheet_name="Kapi Cikisi")
                 st.download_button(
-                    "📥 Excel Olarak İndir",
+                    t("excel_download"),
                     data=excel_bytes,
                     file_name=f"kapi_cikisi_{range_start.strftime('%Y%m%d')}_{range_end.strftime('%Y%m%d')}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True
                 )
 
-    st.caption(
-        "⚠ Not: Hareket kayıtları sunucudaki bir CSV dosyasında tutulur. Uygulamayı barındırdığın "
-        "servis (ör. Streamlit Cloud) her yeniden dağıtımda dosya sistemini sıfırlıyorsa, kayıtlar "
-        "kaybolabilir — önemli dönemlerde Excel raporunu düzenli olarak indirip yedeklemen önerilir."
-    )
+    st.caption(t("movements_persistence_note"))
 
 
 # ---------------------------------------------------------
@@ -2147,8 +2502,8 @@ with tab_load:
     today_str = datetime.now().strftime("%d.%m.%Y")
     load_today = load_all[load_all["TARIH"].str.startswith(today_str)] if not load_all.empty else load_all
 
-    st.subheader("Gemiye Yükleme Girişi")
-    st.caption("Gemiye yüklenen konteynerleri buradan kaydedin — limandaki stoktan otomatik düşer.")
+    st.subheader(t("load_header"))
+    st.caption(t("load_caption"))
 
     l1, l2, l3 = st.columns(3)
 
@@ -2157,7 +2512,7 @@ with tab_load:
             <div class="stat-card">
                 <div class="stat-accent-blue"></div>
                 <div class="stat-icon">🚢</div>
-                <div class="stat-label">Bugün Yüklenen</div>
+                <div class="stat-label">{t('load_today')}</div>
                 <div class="stat-value">{len(load_today):,}</div>
             </div>
         """)
@@ -2167,7 +2522,7 @@ with tab_load:
             <div class="stat-card">
                 <div class="stat-accent-blue"></div>
                 <div class="stat-icon">▣</div>
-                <div class="stat-label">Toplam Yüklenen</div>
+                <div class="stat-label">{t('load_total')}</div>
                 <div class="stat-value">{len(load_all):,}</div>
             </div>
         """)
@@ -2177,7 +2532,7 @@ with tab_load:
             <div class="stat-card">
                 <div class="stat-accent-green"></div>
                 <div class="stat-icon">◷</div>
-                <div class="stat-label">Limanda Kalan</div>
+                <div class="stat-label">{t('yard_remaining')}</div>
                 <div class="stat-value">{remaining_count:,}</div>
             </div>
         """)
@@ -2190,22 +2545,22 @@ with tab_load:
 
     with st.container(border=True):
 
-        st.markdown("**Yükleme Kaydet**")
+        st.markdown(t("load_save_header"))
 
         lc1, lc2 = st.columns([2, 1])
 
         with lc1:
             load_container_input = st.text_input(
-                "Konteyner Numarası",
-                placeholder="Örnek: SEKU6920313",
+                t("container_number_label"),
+                placeholder=t("container_number_placeholder"),
                 max_chars=20,
                 key="load_container_query"
             )
 
         with lc2:
             load_note = st.text_input(
-                "Gemi Adı / Not (opsiyonel)",
-                placeholder="Örn. MSC TIANA F",
+                t("load_note_label"),
+                placeholder=t("load_note_placeholder"),
                 key="load_note_input"
             )
 
@@ -2213,14 +2568,14 @@ with tab_load:
 
         with ld1:
             load_date_val = st.date_input(
-                "Yükleme Tarihi",
+                t("load_date_label"),
                 value=datetime.now().date(),
                 key="load_date_input"
             )
 
         with ld2:
             load_time_val = st.time_input(
-                "Yükleme Saati",
+                t("load_time_label"),
                 value=datetime.now().time().replace(second=0, microsecond=0),
                 key="load_time_input"
             )
@@ -2230,23 +2585,23 @@ with tab_load:
         if load_normalized:
             if load_normalized in moved_out:
                 st.html(
-                    f'<div class="format-hint format-bad">⚠ Bu konteyner için zaten bir hareket kaydı var: '
+                    f'<div class="format-hint format-bad">⚠ {t("already_has_movement")} '
                     f'{safe(load_normalized)}</div>'
                 )
             elif load_normalized not in set(df["_SEARCH"]):
                 st.html(
-                    f'<div class="format-hint format-bad">⚠ Bu konteyner mevcut veritabanında bulunamadı, '
-                    f'yine de kaydedilebilir: {safe(load_normalized)}</div>'
+                    f'<div class="format-hint format-bad">⚠ {t("not_in_db_but_ok")} '
+                    f'{safe(load_normalized)}</div>'
                 )
             elif not is_valid_format(load_normalized):
                 st.html(
-                    f'<div class="format-hint format-bad">⚠ Format hatalı olabilir: {safe(load_normalized)}</div>'
+                    f'<div class="format-hint format-bad">⚠ {t("invalid_format_short")} {safe(load_normalized)}</div>'
                 )
             else:
-                st.html(f'<div class="format-hint format-ok">✓ Format geçerli — {safe(load_normalized)}</div>')
+                st.html(f'<div class="format-hint format-ok">✓ {t("format_valid")} — {safe(load_normalized)}</div>')
 
         load_save_clicked = st.button(
-            "GEMİYE YÜKLEME KAYDET",
+            t("load_save_button"),
             type="primary",
             use_container_width=True,
             key="save_load_button"
@@ -2254,11 +2609,11 @@ with tab_load:
 
         if load_save_clicked:
             if not load_normalized:
-                st.warning("Lütfen konteyner numarası girin.")
+                st.warning(t("enter_container_warning"))
             else:
                 load_timestamp = f"{load_date_val.strftime('%d.%m.%Y')} {load_time_val.strftime('%H:%M')}"
                 save_movement(load_normalized, "Gemiye Yükleme", load_note, movement_datetime=load_timestamp)
-                st.success(f"✓ Gemiye yükleme kaydedildi: {load_normalized} — {load_timestamp}")
+                st.success(f"{t('load_saved')} {load_normalized} — {load_timestamp}")
                 st.rerun()
 
     st.write("")
@@ -2267,24 +2622,24 @@ with tab_load:
     # SON YÜKLEMELER
     # -------------------------------------------------
 
-    with st.expander(f"Son Gemiye Yüklemeler ({len(load_all)} kayıt)", expanded=False):
+    with st.expander(f"{t('recent_loads')} ({len(load_all)} {t('record_count_suffix')})", expanded=False):
 
         if load_all.empty:
-            st.caption("Henüz kayıtlı gemiye yükleme yok.")
+            st.caption(t("no_loads_yet"))
         else:
             recent_load = load_all.iloc[::-1].head(20)
-            st.dataframe(recent_load, use_container_width=True, hide_index=True)
+            st.dataframe(localize_movements_display(recent_load), use_container_width=True, hide_index=True)
 
             undo_load_clicked = st.button(
-                "↺ Son Kaydı Geri Al",
+                t("undo_last"),
                 key="undo_load_button",
-                help="Yanlışlıkla eklenen son hareket kaydını siler (tüm hareket türleri için geçerlidir)."
+                help=t("undo_help")
             )
 
             if undo_load_clicked:
                 undone = undo_last_movement()
                 if undone:
-                    st.success(f"Geri alındı: {undone['KONTEYNER']} — {undone['HAREKET']}")
+                    st.success(f"{t('undone')} {undone['KONTEYNER']} — {movement_label(undone['HAREKET'])}")
                     st.rerun()
 
     # -------------------------------------------------
@@ -2293,20 +2648,20 @@ with tab_load:
 
     with st.container(border=True):
 
-        st.markdown("**Tarih Bazlı Yükleme Raporu**")
-        st.caption("Bir tarih aralığı seçip o dönemde gemiye yüklenen konteynerleri Excel olarak indirin.")
+        st.markdown(t("load_report_header"))
+        st.caption(t("load_report_caption"))
 
         movements_dated = movements_with_parsed_date(movements)
         load_dated = movements_dated[movements_dated["HAREKET"] == "Gemiye Yükleme"] if not movements_dated.empty else movements_dated
 
         if load_dated.empty or load_dated["TARIH_DT"].isna().all():
-            st.caption("Rapor oluşturmak için önce en az bir yükleme kaydı olmalı.")
+            st.caption(t("load_report_empty"))
         else:
             min_date = load_dated["TARIH_DT"].min().date()
             max_date = load_dated["TARIH_DT"].max().date()
 
             date_range_l = st.date_input(
-                "Tarih Aralığı",
+                t("date_range_label"),
                 value=(min_date, max_date),
                 min_value=min_date,
                 max_value=max_date,
@@ -2325,23 +2680,19 @@ with tab_load:
             filtered_load = load_dated[mask_l].drop(columns=["TARIH_DT"])
             filtered_load = enrich_movements_with_container_info(filtered_load, df)
 
-            st.caption(f"Seçilen aralıkta {len(filtered_load)} yükleme kaydı bulundu.")
+            st.caption(t("load_records_found", count=len(filtered_load)))
 
             if not filtered_load.empty:
                 excel_bytes_l = build_excel_bytes(filtered_load, sheet_name="Gemiye Yukleme")
                 st.download_button(
-                    "📥 Excel Olarak İndir",
+                    t("excel_download"),
                     data=excel_bytes_l,
                     file_name=f"gemiye_yukleme_{range_start_l.strftime('%Y%m%d')}_{range_end_l.strftime('%Y%m%d')}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True
                 )
 
-    st.caption(
-        "⚠ Not: Hareket kayıtları sunucudaki bir CSV dosyasında tutulur. Uygulamayı barındırdığın "
-        "servis (ör. Streamlit Cloud) her yeniden dağıtımda dosya sistemini sıfırlıyorsa, kayıtlar "
-        "kaybolabilir — önemli dönemlerde Excel raporunu düzenli olarak indirip yedeklemen önerilir."
-    )
+    st.caption(t("movements_persistence_note"))
 
 
 
@@ -2349,8 +2700,8 @@ with tab_load:
 # FOOTER
 # =========================================================
 
-st.html("""
+st.html(f"""
 <div class="app-footer">
-    ⚓ ALPORT BANJUL &nbsp;·&nbsp; KONTEYNER TAKİP SİSTEMİ &nbsp;·&nbsp; OPERASYON
+    {t('footer_text')}
 </div>
 """)
