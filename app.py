@@ -833,6 +833,41 @@ def get_moved_out_numbers(movements):
     return set(movements["KONTEYNER"].tolist())
 
 
+def movements_with_parsed_date(movements):
+    """Hareket kayıtlarına, tarih bazlı filtreleme için ayrıştırılmış bir tarih sütunu ekler."""
+
+    movements = movements.copy()
+    if movements.empty:
+        movements["TARIH_DT"] = pd.Series(dtype="datetime64[ns]")
+        return movements
+
+    movements["TARIH_DT"] = pd.to_datetime(movements["TARIH"], format="%d.%m.%Y %H:%M", errors="coerce")
+    return movements
+
+
+def enrich_movements_with_container_info(movements, df):
+    """Hareket kayıtlarına, ana veritabanından hat/gemi/saha bilgilerini ekler (rapor için)."""
+
+    if movements.empty:
+        return movements
+
+    info_cols = [c for c in ["_SEARCH", "AGENT", "VESSEL NAME", "AREA", "SIZE", "TYPE"] if c in df.columns]
+    info = df[info_cols].rename(columns={"_SEARCH": "KONTEYNER"})
+    info["AGENT"] = info["AGENT"].apply(normalize_line) if "AGENT" in info.columns else "-"
+
+    merged = movements.merge(info, on="KONTEYNER", how="left")
+    return merged
+
+
+def build_excel_bytes(export_df, sheet_name="Rapor"):
+    """Bir DataFrame'i indirilebilir bir Excel dosyasının bayt içeriğine çevirir."""
+
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+        export_df.to_excel(writer, index=False, sheet_name=sheet_name[:31])
+    return buffer.getvalue()
+
+
 def lookup_container(df, raw_number):
     """Tek bir konteyner numarasını veritabanında arar.
     Dönüş: (status, record_or_none, normalized) -- status: 'ok' | 'not_found' | 'duplicate' | 'invalid'"""
@@ -1197,7 +1232,9 @@ line_options = ["Hat seçilmedi"] + available_lines
 # SEKMELER
 # =========================================================
 
-tab_single, tab_batch, tab_stock = st.tabs(["⚓ Tekli Arama", "📋 Toplu Doğrulama", "📦 Stok Takibi"])
+tab_single, tab_batch, tab_gate, tab_load = st.tabs(
+    ["⚓ Tekli Arama", "📋 Toplu Doğrulama", "🚪 Kapı Çıkışı", "🚢 Gemiye Yükleme"]
+)
 
 
 # ---------------------------------------------------------
@@ -1603,56 +1640,48 @@ with tab_batch:
 
 
 # ---------------------------------------------------------
-# STOK TAKİBİ
+# KAPI ÇIKIŞI
 # ---------------------------------------------------------
 
-with tab_stock:
+with tab_gate:
 
     movements = load_movements()
     moved_out = get_moved_out_numbers(movements)
 
     total_count = len(df)
-    gate_out_count = int((movements["HAREKET"] == "Kapı Çıkışı").sum()) if not movements.empty else 0
-    loaded_count = int((movements["HAREKET"] == "Gemiye Yükleme").sum()) if not movements.empty else 0
+    gate_out_all = movements[movements["HAREKET"] == "Kapı Çıkışı"] if not movements.empty else movements
     remaining_df = df[~df["_SEARCH"].isin(moved_out)]
     remaining_count = len(remaining_df)
 
-    st.subheader("Konteyner Stok Takibi")
-    st.caption("Kapı çıkışlarını ve gemiye yüklenen konteynerleri kaydedin — limanda kalan stok otomatik hesaplanır.")
+    today_str = datetime.now().strftime("%d.%m.%Y")
+    gate_out_today = gate_out_all[gate_out_all["TARIH"].str.startswith(today_str)] if not gate_out_all.empty else gate_out_all
 
-    s1, s2, s3, s4 = st.columns(4)
+    st.subheader("Kapı Çıkışı Girişi")
+    st.caption("Sahadan çıkan konteynerleri buradan kaydedin — limandaki stoktan otomatik düşer.")
 
-    with s1:
-        st.html(f"""
-            <div class="stat-card">
-                <div class="stat-accent-blue"></div>
-                <div class="stat-icon">▣</div>
-                <div class="stat-label">Toplam Envanter</div>
-                <div class="stat-value">{total_count:,}</div>
-            </div>
-        """)
+    g1, g2, g3 = st.columns(3)
 
-    with s2:
+    with g1:
         st.html(f"""
             <div class="stat-card">
                 <div class="stat-accent-blue"></div>
                 <div class="stat-icon">🚪</div>
-                <div class="stat-label">Kapı Çıkışı</div>
-                <div class="stat-value">{gate_out_count:,}</div>
+                <div class="stat-label">Bugün Çıkan</div>
+                <div class="stat-value">{len(gate_out_today):,}</div>
             </div>
         """)
 
-    with s3:
+    with g2:
         st.html(f"""
             <div class="stat-card">
                 <div class="stat-accent-blue"></div>
-                <div class="stat-icon">🚢</div>
-                <div class="stat-label">Gemiye Yüklenen</div>
-                <div class="stat-value">{loaded_count:,}</div>
+                <div class="stat-icon">▣</div>
+                <div class="stat-label">Toplam Kapı Çıkışı</div>
+                <div class="stat-value">{len(gate_out_all):,}</div>
             </div>
         """)
 
-    with s4:
+    with g3:
         st.html(f"""
             <div class="stat-card">
                 <div class="stat-accent-green"></div>
@@ -1665,124 +1694,343 @@ with tab_stock:
     st.write("")
 
     # -------------------------------------------------
-    # HAREKET KAYDETME FORMU
+    # KAYIT FORMU
     # -------------------------------------------------
 
     with st.container(border=True):
 
-        st.markdown("**Hareket Kaydet**")
+        st.markdown("**Çıkış Kaydet**")
 
-        movement_type = st.radio(
-            "Hareket Tipi",
-            ["Kapı Çıkışı", "Gemiye Yükleme"],
-            horizontal=True,
-            key="movement_type_select"
-        )
+        gc1, gc2 = st.columns([2, 1])
 
-        mc1, mc2 = st.columns([2, 1])
-
-        with mc1:
-            movement_container_input = st.text_input(
+        with gc1:
+            gate_container_input = st.text_input(
                 "Konteyner Numarası",
                 placeholder="Örnek: SEKU6920313",
                 max_chars=20,
-                key="movement_container_query"
+                key="gate_container_query"
             )
 
-        with mc2:
-            movement_note = st.text_input(
-                "Not (opsiyonel)",
-                placeholder="Gemi adı, plaka no vb.",
-                key="movement_note_input"
+        with gc2:
+            gate_note = st.text_input(
+                "Araç Plakası / Not (opsiyonel)",
+                placeholder="Örn. BJL 1234",
+                key="gate_note_input"
             )
 
-        movement_normalized = normalize_container(movement_container_input)
+        gate_normalized = normalize_container(gate_container_input)
 
-        if movement_normalized:
-            if movement_normalized in moved_out:
+        if gate_normalized:
+            if gate_normalized in moved_out:
                 st.html(
                     f'<div class="format-hint format-bad">⚠ Bu konteyner için zaten bir hareket kaydı var: '
-                    f'{safe(movement_normalized)}</div>'
+                    f'{safe(gate_normalized)}</div>'
                 )
-            elif movement_normalized not in set(df["_SEARCH"]):
+            elif gate_normalized not in set(df["_SEARCH"]):
                 st.html(
                     f'<div class="format-hint format-bad">⚠ Bu konteyner mevcut veritabanında bulunamadı, '
-                    f'yine de kaydedilebilir: {safe(movement_normalized)}</div>'
+                    f'yine de kaydedilebilir: {safe(gate_normalized)}</div>'
                 )
-            elif not is_valid_format(movement_normalized):
+            elif not is_valid_format(gate_normalized):
                 st.html(
-                    f'<div class="format-hint format-bad">⚠ Format hatalı olabilir: {safe(movement_normalized)}</div>'
+                    f'<div class="format-hint format-bad">⚠ Format hatalı olabilir: {safe(gate_normalized)}</div>'
                 )
             else:
-                st.html(f'<div class="format-hint format-ok">✓ Format geçerli — {safe(movement_normalized)}</div>')
+                st.html(f'<div class="format-hint format-ok">✓ Format geçerli — {safe(gate_normalized)}</div>')
 
-        save_clicked = st.button(
-            "HAREKETİ KAYDET",
+        gate_save_clicked = st.button(
+            "KAPI ÇIKIŞI KAYDET",
             type="primary",
             use_container_width=True,
-            key="save_movement_button"
+            key="save_gate_button"
         )
 
-        if save_clicked:
-            if not movement_normalized:
+        if gate_save_clicked:
+            if not gate_normalized:
                 st.warning("Lütfen konteyner numarası girin.")
             else:
-                save_movement(movement_normalized, movement_type, movement_note)
-                st.success(f"✓ Kaydedildi: {movement_normalized} — {movement_type}")
+                save_movement(gate_normalized, "Kapı Çıkışı", gate_note)
+                st.success(f"✓ Kapı çıkışı kaydedildi: {gate_normalized}")
                 st.rerun()
 
     st.write("")
 
     # -------------------------------------------------
-    # SON HAREKETLER
+    # SON ÇIKIŞLAR
     # -------------------------------------------------
 
-    with st.expander(f"Son Hareketler ({len(movements)} kayıt)", expanded=False):
+    with st.expander(f"Son Kapı Çıkışları ({len(gate_out_all)} kayıt)", expanded=False):
 
-        if movements.empty:
-            st.caption("Henüz kayıtlı hareket yok.")
+        if gate_out_all.empty:
+            st.caption("Henüz kayıtlı kapı çıkışı yok.")
         else:
-            recent = movements.iloc[::-1].head(20)
-            st.dataframe(recent, use_container_width=True, hide_index=True)
+            recent_gate = gate_out_all.iloc[::-1].head(20)
+            st.dataframe(recent_gate, use_container_width=True, hide_index=True)
 
-            undo_clicked = st.button(
+            undo_gate_clicked = st.button(
                 "↺ Son Kaydı Geri Al",
-                key="undo_movement_button",
-                help="Yanlışlıkla eklenen son hareket kaydını siler."
+                key="undo_gate_button",
+                help="Yanlışlıkla eklenen son hareket kaydını siler (tüm hareket türleri için geçerlidir)."
             )
 
-            if undo_clicked:
+            if undo_gate_clicked:
                 undone = undo_last_movement()
                 if undone:
                     st.success(f"Geri alındı: {undone['KONTEYNER']} — {undone['HAREKET']}")
                     st.rerun()
 
     # -------------------------------------------------
-    # LİMANDA KALAN KONTEYNERLER
+    # TARİH BAZLI EXCEL RAPORU
     # -------------------------------------------------
 
-    with st.expander(f"Limanda Kalan Konteynerler ({remaining_count})", expanded=False):
+    with st.container(border=True):
 
-        if remaining_df.empty:
-            st.caption("Limanda kayıtlı konteyner kalmadı.")
+        st.markdown("**Tarih Bazlı Kapı Çıkışı Raporu**")
+        st.caption("Bir tarih aralığı seçip o dönemde çıkış yapan konteynerleri Excel olarak indirin.")
+
+        movements_dated = movements_with_parsed_date(movements)
+        gate_dated = movements_dated[movements_dated["HAREKET"] == "Kapı Çıkışı"] if not movements_dated.empty else movements_dated
+
+        if gate_dated.empty or gate_dated["TARIH_DT"].isna().all():
+            st.caption("Rapor oluşturmak için önce en az bir kapı çıkışı kaydı olmalı.")
         else:
-            display_cols = [c for c in ["CONTAINER", "AGENT", "VESSEL NAME", "AREA", "SIZE", "TYPE"] if c in remaining_df.columns]
-            st.dataframe(remaining_df[display_cols], use_container_width=True, hide_index=True)
+            min_date = gate_dated["TARIH_DT"].min().date()
+            max_date = gate_dated["TARIH_DT"].max().date()
 
-            csv_data = remaining_df[display_cols].to_csv(index=False).encode("utf-8-sig")
-            st.download_button(
-                "📥 Listeyi CSV Olarak İndir",
-                data=csv_data,
-                file_name=f"limanda_kalan_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-                mime="text/csv",
-                use_container_width=True
+            date_range = st.date_input(
+                "Tarih Aralığı",
+                value=(min_date, max_date),
+                min_value=min_date,
+                max_value=max_date,
+                key="gate_report_date_range"
             )
+
+            if isinstance(date_range, tuple) and len(date_range) == 2:
+                range_start, range_end = date_range
+            else:
+                range_start = range_end = date_range
+
+            mask = (
+                (gate_dated["TARIH_DT"].dt.date >= range_start)
+                & (gate_dated["TARIH_DT"].dt.date <= range_end)
+            )
+            filtered_gate = gate_dated[mask].drop(columns=["TARIH_DT"])
+            filtered_gate = enrich_movements_with_container_info(filtered_gate, df)
+
+            st.caption(f"Seçilen aralıkta {len(filtered_gate)} kapı çıkışı kaydı bulundu.")
+
+            if not filtered_gate.empty:
+                excel_bytes = build_excel_bytes(filtered_gate, sheet_name="Kapi Cikisi")
+                st.download_button(
+                    "📥 Excel Olarak İndir",
+                    data=excel_bytes,
+                    file_name=f"kapi_cikisi_{range_start.strftime('%Y%m%d')}_{range_end.strftime('%Y%m%d')}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True
+                )
 
     st.caption(
         "⚠ Not: Hareket kayıtları sunucudaki bir CSV dosyasında tutulur. Uygulamayı barındırdığın "
         "servis (ör. Streamlit Cloud) her yeniden dağıtımda dosya sistemini sıfırlıyorsa, kayıtlar "
-        "kaybolabilir — önemli dönemlerde CSV'yi düzenli olarak indirip yedeklemen önerilir."
+        "kaybolabilir — önemli dönemlerde Excel raporunu düzenli olarak indirip yedeklemen önerilir."
     )
+
+
+# ---------------------------------------------------------
+# GEMİYE YÜKLEME
+# ---------------------------------------------------------
+
+with tab_load:
+
+    movements = load_movements()
+    moved_out = get_moved_out_numbers(movements)
+
+    load_all = movements[movements["HAREKET"] == "Gemiye Yükleme"] if not movements.empty else movements
+    remaining_df = df[~df["_SEARCH"].isin(moved_out)]
+    remaining_count = len(remaining_df)
+
+    today_str = datetime.now().strftime("%d.%m.%Y")
+    load_today = load_all[load_all["TARIH"].str.startswith(today_str)] if not load_all.empty else load_all
+
+    st.subheader("Gemiye Yükleme Girişi")
+    st.caption("Gemiye yüklenen konteynerleri buradan kaydedin — limandaki stoktan otomatik düşer.")
+
+    l1, l2, l3 = st.columns(3)
+
+    with l1:
+        st.html(f"""
+            <div class="stat-card">
+                <div class="stat-accent-blue"></div>
+                <div class="stat-icon">🚢</div>
+                <div class="stat-label">Bugün Yüklenen</div>
+                <div class="stat-value">{len(load_today):,}</div>
+            </div>
+        """)
+
+    with l2:
+        st.html(f"""
+            <div class="stat-card">
+                <div class="stat-accent-blue"></div>
+                <div class="stat-icon">▣</div>
+                <div class="stat-label">Toplam Yüklenen</div>
+                <div class="stat-value">{len(load_all):,}</div>
+            </div>
+        """)
+
+    with l3:
+        st.html(f"""
+            <div class="stat-card">
+                <div class="stat-accent-green"></div>
+                <div class="stat-icon">◷</div>
+                <div class="stat-label">Limanda Kalan</div>
+                <div class="stat-value">{remaining_count:,}</div>
+            </div>
+        """)
+
+    st.write("")
+
+    # -------------------------------------------------
+    # KAYIT FORMU
+    # -------------------------------------------------
+
+    with st.container(border=True):
+
+        st.markdown("**Yükleme Kaydet**")
+
+        lc1, lc2 = st.columns([2, 1])
+
+        with lc1:
+            load_container_input = st.text_input(
+                "Konteyner Numarası",
+                placeholder="Örnek: SEKU6920313",
+                max_chars=20,
+                key="load_container_query"
+            )
+
+        with lc2:
+            load_note = st.text_input(
+                "Gemi Adı / Not (opsiyonel)",
+                placeholder="Örn. MSC TIANA F",
+                key="load_note_input"
+            )
+
+        load_normalized = normalize_container(load_container_input)
+
+        if load_normalized:
+            if load_normalized in moved_out:
+                st.html(
+                    f'<div class="format-hint format-bad">⚠ Bu konteyner için zaten bir hareket kaydı var: '
+                    f'{safe(load_normalized)}</div>'
+                )
+            elif load_normalized not in set(df["_SEARCH"]):
+                st.html(
+                    f'<div class="format-hint format-bad">⚠ Bu konteyner mevcut veritabanında bulunamadı, '
+                    f'yine de kaydedilebilir: {safe(load_normalized)}</div>'
+                )
+            elif not is_valid_format(load_normalized):
+                st.html(
+                    f'<div class="format-hint format-bad">⚠ Format hatalı olabilir: {safe(load_normalized)}</div>'
+                )
+            else:
+                st.html(f'<div class="format-hint format-ok">✓ Format geçerli — {safe(load_normalized)}</div>')
+
+        load_save_clicked = st.button(
+            "GEMİYE YÜKLEME KAYDET",
+            type="primary",
+            use_container_width=True,
+            key="save_load_button"
+        )
+
+        if load_save_clicked:
+            if not load_normalized:
+                st.warning("Lütfen konteyner numarası girin.")
+            else:
+                save_movement(load_normalized, "Gemiye Yükleme", load_note)
+                st.success(f"✓ Gemiye yükleme kaydedildi: {load_normalized}")
+                st.rerun()
+
+    st.write("")
+
+    # -------------------------------------------------
+    # SON YÜKLEMELER
+    # -------------------------------------------------
+
+    with st.expander(f"Son Gemiye Yüklemeler ({len(load_all)} kayıt)", expanded=False):
+
+        if load_all.empty:
+            st.caption("Henüz kayıtlı gemiye yükleme yok.")
+        else:
+            recent_load = load_all.iloc[::-1].head(20)
+            st.dataframe(recent_load, use_container_width=True, hide_index=True)
+
+            undo_load_clicked = st.button(
+                "↺ Son Kaydı Geri Al",
+                key="undo_load_button",
+                help="Yanlışlıkla eklenen son hareket kaydını siler (tüm hareket türleri için geçerlidir)."
+            )
+
+            if undo_load_clicked:
+                undone = undo_last_movement()
+                if undone:
+                    st.success(f"Geri alındı: {undone['KONTEYNER']} — {undone['HAREKET']}")
+                    st.rerun()
+
+    # -------------------------------------------------
+    # TARİH BAZLI EXCEL RAPORU
+    # -------------------------------------------------
+
+    with st.container(border=True):
+
+        st.markdown("**Tarih Bazlı Yükleme Raporu**")
+        st.caption("Bir tarih aralığı seçip o dönemde gemiye yüklenen konteynerleri Excel olarak indirin.")
+
+        movements_dated = movements_with_parsed_date(movements)
+        load_dated = movements_dated[movements_dated["HAREKET"] == "Gemiye Yükleme"] if not movements_dated.empty else movements_dated
+
+        if load_dated.empty or load_dated["TARIH_DT"].isna().all():
+            st.caption("Rapor oluşturmak için önce en az bir yükleme kaydı olmalı.")
+        else:
+            min_date = load_dated["TARIH_DT"].min().date()
+            max_date = load_dated["TARIH_DT"].max().date()
+
+            date_range_l = st.date_input(
+                "Tarih Aralığı",
+                value=(min_date, max_date),
+                min_value=min_date,
+                max_value=max_date,
+                key="load_report_date_range"
+            )
+
+            if isinstance(date_range_l, tuple) and len(date_range_l) == 2:
+                range_start_l, range_end_l = date_range_l
+            else:
+                range_start_l = range_end_l = date_range_l
+
+            mask_l = (
+                (load_dated["TARIH_DT"].dt.date >= range_start_l)
+                & (load_dated["TARIH_DT"].dt.date <= range_end_l)
+            )
+            filtered_load = load_dated[mask_l].drop(columns=["TARIH_DT"])
+            filtered_load = enrich_movements_with_container_info(filtered_load, df)
+
+            st.caption(f"Seçilen aralıkta {len(filtered_load)} yükleme kaydı bulundu.")
+
+            if not filtered_load.empty:
+                excel_bytes_l = build_excel_bytes(filtered_load, sheet_name="Gemiye Yukleme")
+                st.download_button(
+                    "📥 Excel Olarak İndir",
+                    data=excel_bytes_l,
+                    file_name=f"gemiye_yukleme_{range_start_l.strftime('%Y%m%d')}_{range_end_l.strftime('%Y%m%d')}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True
+                )
+
+    st.caption(
+        "⚠ Not: Hareket kayıtları sunucudaki bir CSV dosyasında tutulur. Uygulamayı barındırdığın "
+        "servis (ör. Streamlit Cloud) her yeniden dağıtımda dosya sistemini sıfırlıyorsa, kayıtlar "
+        "kaybolabilir — önemli dönemlerde Excel raporunu düzenli olarak indirip yedeklemen önerilir."
+    )
+
 
 
 # =========================================================
