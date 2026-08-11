@@ -31,6 +31,7 @@ st.set_page_config(
 
 EXCEL_FILE = "containers.xlsx"
 MOVEMENTS_FILE = "hareketler.csv"
+CFS_FILE = "cfs_bosaltim.csv"
 MAX_HISTORY = 6
 
 # ALPORT Banjul logosu (base64 gömülü — ayrı dosya taşımaya gerek yok)
@@ -138,6 +139,7 @@ TRANSLATIONS = {
         "tab_batch": "📋 Toplu Doğrulama",
         "tab_gate": "🚪 Kapı Çıkışı",
         "tab_load": "🚢 Gemiye Yükleme",
+        "tab_cfs": "📥 CFS Boşaltım",
 
         "single_header": "Konteyner Doğrulama",
         "single_caption": "Yükleme hattını seçin ve konteyner numarasını girin.",
@@ -268,6 +270,48 @@ TRANSLATIONS = {
         "footer_text": "⚓ ALPORT BANJUL &nbsp;·&nbsp; KONTEYNER TAKİP SİSTEMİ &nbsp;·&nbsp; OPERASYON",
 
         "movement_gate": "Kapı Çıkışı",
+        "cfs_header": "CFS İç Boşaltım Girişi",
+        "cfs_caption": "CFS'de açılıp iç boşaltımı (stripping) yapılan konteynerleri buradan günlük olarak kaydedin.",
+        "cfs_today": "Bugün Boşaltılan",
+        "cfs_total": "Toplam Kayıt",
+        "cfs_this_month": "Bu Ay",
+        "cfs_save_header": "**Boşaltım Kaydet**",
+        "cfs_cargo_type_label": "Kargo Tipi",
+        "cfs_cargo_type_transit": "Transit / Genel Kargo",
+        "cfs_cargo_type_vehicle": "Araçlı Konteyner",
+        "cfs_vessel_label": "Gemi Adı",
+        "cfs_vessel_placeholder": "Örn. EM HYDRA",
+        "cfs_voyage_label": "Voyage Number",
+        "cfs_voyage_placeholder": "Örn. 0BJ77N1MA",
+        "cfs_size_label": "Boyut",
+        "cfs_agent_label": "Hat / Agent",
+        "cfs_remark_label": "Remark",
+        "cfs_remark_placeholder": "Örn. FCL",
+        "cfs_stripped_date_label": "Boşaltım Tarihi",
+        "cfs_destination_label": "Destinasyon",
+        "cfs_destination_placeholder": "Örn. SENEGAL, MALI, GUINEA-CONAKRY",
+        "cfs_terminal_label": "Boşaltım Terminali",
+        "cfs_terminal_placeholder": "Örn. TRANSIT TERMINAL",
+        "cfs_optional_expander": "Ek Bilgiler (opsiyonel)",
+        "cfs_empty_date_label": "Boş Konteyner Tarihi",
+        "cfs_exit_date_label": "Çıkış Tarihi / Gate Out",
+        "cfs_vehicle_count_label": "Araç Sayısı",
+        "cfs_model_label": "Araç Modelleri",
+        "cfs_model_placeholder": "Örn. TOYOTA RAV4, FORD ESCAPE",
+        "cfs_chassis_label": "Şasi Numaraları",
+        "cfs_chassis_placeholder": "Örn. J041144, A80467",
+        "cfs_loading_vessel_label": "Yükleme Gemisi",
+        "cfs_loading_voyage_label": "Yükleme Voyage No",
+        "cfs_ec_loaded_label": "E/C Yükleme Tarihi/Saati",
+        "cfs_save_button": "BOŞALTIMI KAYDET",
+        "cfs_saved": "✓ CFS boşaltım kaydı eklendi:",
+        "cfs_recent": "Son Boşaltım Kayıtları",
+        "cfs_empty_title": "Henüz kayıtlı CFS boşaltımı yok.",
+        "cfs_empty_sub": "İlk kaydı yukarıdaki formdan girebilirsin.",
+        "cfs_report_header": "**Tarih Bazlı CFS Raporu**",
+        "cfs_report_caption": "Bir tarih aralığı seçip, ALPORT'un orijinal formatına uygun (Transit + Araçlı sekmeleri) Excel raporu indirin.",
+        "cfs_report_empty": "Rapor oluşturmak için önce en az bir CFS kaydı olmalı.",
+        "cfs_records_found": "Seçilen aralıkta {count} kayıt bulundu.",
         "movement_load": "Gemiye Yükleme",
         "record_count_suffix": "kayıt",
     },
@@ -305,6 +349,7 @@ TRANSLATIONS = {
         "tab_batch": "📋 Batch Verification",
         "tab_gate": "🚪 Gate Exit",
         "tab_load": "🚢 Vessel Loading",
+        "tab_cfs": "📥 CFS Stripping",
 
         "single_header": "Container Verification",
         "single_caption": "Select the loading line and enter the container number.",
@@ -435,6 +480,48 @@ TRANSLATIONS = {
         "footer_text": "⚓ ALPORT BANJUL &nbsp;·&nbsp; CONTAINER TRACKING SYSTEM &nbsp;·&nbsp; OPERATIONS",
 
         "movement_gate": "Gate Exit",
+        "cfs_header": "CFS Stripping Entry",
+        "cfs_caption": "Record containers opened and internally stripped at CFS here, on a daily basis.",
+        "cfs_today": "Stripped Today",
+        "cfs_total": "Total Records",
+        "cfs_this_month": "This Month",
+        "cfs_save_header": "**Record Stripping**",
+        "cfs_cargo_type_label": "Cargo Type",
+        "cfs_cargo_type_transit": "Transit / General Cargo",
+        "cfs_cargo_type_vehicle": "Vehicle Container",
+        "cfs_vessel_label": "Vessel Name",
+        "cfs_vessel_placeholder": "E.g. EM HYDRA",
+        "cfs_voyage_label": "Voyage Number",
+        "cfs_voyage_placeholder": "E.g. 0BJ77N1MA",
+        "cfs_size_label": "Size",
+        "cfs_agent_label": "Line / Agent",
+        "cfs_remark_label": "Remark",
+        "cfs_remark_placeholder": "E.g. FCL",
+        "cfs_stripped_date_label": "Stripped Date",
+        "cfs_destination_label": "Destination",
+        "cfs_destination_placeholder": "E.g. SENEGAL, MALI, GUINEA-CONAKRY",
+        "cfs_terminal_label": "Stripped Terminal",
+        "cfs_terminal_placeholder": "E.g. TRANSIT TERMINAL",
+        "cfs_optional_expander": "Additional Details (optional)",
+        "cfs_empty_date_label": "Empty Container Date",
+        "cfs_exit_date_label": "Exit Date / Gate Out",
+        "cfs_vehicle_count_label": "Number of Vehicles",
+        "cfs_model_label": "Vehicle Models",
+        "cfs_model_placeholder": "E.g. TOYOTA RAV4, FORD ESCAPE",
+        "cfs_chassis_label": "Chassis Numbers",
+        "cfs_chassis_placeholder": "E.g. J041144, A80467",
+        "cfs_loading_vessel_label": "Loading Vessel",
+        "cfs_loading_voyage_label": "Loading Voyage No",
+        "cfs_ec_loaded_label": "E/C Loaded Date/Time",
+        "cfs_save_button": "RECORD STRIPPING",
+        "cfs_saved": "✓ CFS stripping record added:",
+        "cfs_recent": "Recent Stripping Records",
+        "cfs_empty_title": "No CFS stripping records yet.",
+        "cfs_empty_sub": "You can record the first entry using the form above.",
+        "cfs_report_header": "**Date-Based CFS Report**",
+        "cfs_report_caption": "Select a date range and download an Excel report matching ALPORT's original format (Transit + Vehicle sheets).",
+        "cfs_report_empty": "You need at least one CFS record to generate a report.",
+        "cfs_records_found": "Found {count} records in the selected range.",
         "movement_load": "Vessel Loading",
         "record_count_suffix": "records",
     },
@@ -1421,6 +1508,122 @@ def get_moved_out_numbers(movements):
     return set(movements["KONTEYNER"].tolist())
 
 
+CFS_COLUMNS = [
+    "KONTEYNER", "BOYUT", "GEMI_ADI", "VOYAGE_NUMBER", "AGENT", "REMARK",
+    "KARGO_TIPI", "BOSALTIM_TARIHI", "DESTINATION", "TERMINAL",
+    "BOS_KONTEYNER_TARIHI", "CIKIS_TARIHI",
+    "ARAC_SAYISI", "MODEL", "SASI_NUMARASI",
+    "YUKLEME_GEMISI", "YUKLEME_VOYAGE_NO", "EC_YUKLEME_TARIHI",
+    "KAYIT_ZAMANI",
+]
+
+
+def load_cfs_records():
+    """CFS iç boşaltım kayıtlarını CSV'den okur. Dosya yoksa boş bir tablo döndürür."""
+
+    if not os.path.exists(CFS_FILE):
+        return pd.DataFrame(columns=CFS_COLUMNS)
+
+    try:
+        records = pd.read_csv(CFS_FILE, dtype=str)
+        for col in CFS_COLUMNS:
+            if col not in records.columns:
+                records[col] = ""
+        return records.fillna("")[CFS_COLUMNS]
+    except Exception:
+        return pd.DataFrame(columns=CFS_COLUMNS)
+
+
+def save_cfs_record(record):
+    """Yeni bir CFS boşaltım kaydı ekler ve CSV'ye kaydeder. record bir dict olmalı."""
+
+    records = load_cfs_records()
+
+    full_record = {col: record.get(col, "") for col in CFS_COLUMNS}
+    full_record["KAYIT_ZAMANI"] = datetime.now().strftime("%d.%m.%Y %H:%M")
+
+    new_row = pd.DataFrame([full_record])
+    records = pd.concat([records, new_row], ignore_index=True)
+    records.to_csv(CFS_FILE, index=False)
+
+
+def undo_last_cfs_record():
+    """En son eklenen CFS kaydını siler."""
+
+    records = load_cfs_records()
+    if records.empty:
+        return None
+
+    last_row = records.iloc[-1].to_dict()
+    records = records.iloc[:-1]
+    records.to_csv(CFS_FILE, index=False)
+    return last_row
+
+
+def cfs_records_with_parsed_date(records):
+    """CFS kayıtlarına, tarih bazlı filtreleme için ayrıştırılmış bir tarih sütunu ekler."""
+
+    records = records.copy()
+    if records.empty:
+        records["BOSALTIM_TARIHI_DT"] = pd.Series(dtype="datetime64[ns]")
+        return records
+
+    records["BOSALTIM_TARIHI_DT"] = pd.to_datetime(records["BOSALTIM_TARIHI"], format="%d.%m.%Y", errors="coerce")
+    return records
+
+
+def localize_cfs_display(records_slice):
+    """CFS tablosunu ekranda gösterirken sütun adlarını aktif dile çevirir."""
+
+    if records_slice.empty:
+        return records_slice
+
+    display = records_slice.copy()
+
+    if st.session_state.get("language") == "en":
+        display = display.rename(columns={
+            "KONTEYNER": "CONTAINER",
+            "BOYUT": "SIZE",
+            "GEMI_ADI": "VESSEL NAME",
+            "VOYAGE_NUMBER": "VOYAGE NUMBER",
+            "AGENT": "AGENT",
+            "REMARK": "REMARK",
+            "KARGO_TIPI": "CARGO TYPE",
+            "BOSALTIM_TARIHI": "STRIPPED DATE",
+            "DESTINATION": "DESTINATION",
+            "TERMINAL": "STRIPPED TERMINAL",
+            "BOS_KONTEYNER_TARIHI": "EMPTY DATE",
+            "CIKIS_TARIHI": "EXIT DATE",
+            "ARAC_SAYISI": "NUMBER OF VEHICLE",
+            "MODEL": "MODEL",
+            "SASI_NUMARASI": "CHASSI NUMBER",
+            "YUKLEME_GEMISI": "LOADING VESSEL",
+            "YUKLEME_VOYAGE_NO": "VOYAGE NO",
+            "EC_YUKLEME_TARIHI": "E/C LOADED DATE/TIME",
+            "KAYIT_ZAMANI": "ENTRY TIME",
+        })
+    else:
+        display = display.rename(columns={
+            "KONTEYNER": "KONTEYNER NO",
+            "BOYUT": "SIZE",
+            "GEMI_ADI": "GEMİ ADI",
+            "VOYAGE_NUMBER": "VOYAGE NUMBER",
+            "KARGO_TIPI": "KARGO TİPİ",
+            "BOSALTIM_TARIHI": "STRIPPED DATE",
+            "TERMINAL": "STRIPPED TERMINAL",
+            "BOS_KONTEYNER_TARIHI": "EMPTY DATE",
+            "CIKIS_TARIHI": "EXIT DATE",
+            "ARAC_SAYISI": "ARAÇ SAYISI",
+            "SASI_NUMARASI": "CHASSI NUMBER",
+            "YUKLEME_GEMISI": "LOADING VESSEL",
+            "YUKLEME_VOYAGE_NO": "VOYAGE NO",
+            "EC_YUKLEME_TARIHI": "E/C LOADED DATE/TIME",
+            "KAYIT_ZAMANI": "KAYIT ZAMANI",
+        })
+
+    return display
+
+
 def movements_with_parsed_date(movements):
     """Hareket kayıtlarına, tarih bazlı filtreleme için ayrıştırılmış bir tarih sütunu ekler."""
 
@@ -1453,6 +1656,47 @@ def build_excel_bytes(export_df, sheet_name="Rapor"):
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
         export_df.to_excel(writer, index=False, sheet_name=sheet_name[:31])
+    return buffer.getvalue()
+
+
+def build_cfs_excel_bytes(cfs_df):
+    """CFS kayıtlarını, ALPORT'un orijinal dosya formatına uygun şekilde
+    'TRANSIT' ve 'ARAÇLI' olmak üzere iki ayrı sekimde Excel'e çevirir."""
+
+    transit_cols = {
+        "KONTEYNER": "KONTEYNER NO", "BOYUT": "SIZE", "GEMI_ADI": "GEMİ ADI",
+        "VOYAGE_NUMBER": "VOYAGE NUMBER", "REMARK": "REMARK", "AGENT": "AGENT",
+        "BOSALTIM_TARIHI": "STRIPPED DATE", "DESTINATION": "DESTINATION",
+        "BOS_KONTEYNER_TARIHI": "EMPTY DATES", "CIKIS_TARIHI": "EXIT DATE",
+        "TERMINAL": "STRIPPED TERMINAL",
+    }
+    vehicle_cols = {
+        "KONTEYNER": "KONTEYNER NO", "BOYUT": "SIZE", "GEMI_ADI": "GEMİ ADI",
+        "VOYAGE_NUMBER": "VOYAGE NUMBER", "REMARK": "REMARK", "AGENT": "AGENT",
+        "BOSALTIM_TARIHI": "STRIPPED DATE", "ARAC_SAYISI": "NUMBER OF VEHICLE",
+        "BOS_KONTEYNER_TARIHI": "EMPTY DATES", "CIKIS_TARIHI": "GATE OUT",
+        "MODEL": "MODEL", "SASI_NUMARASI": "CHASSI NUMBER",
+        "TERMINAL": "STRIPPED TERMINAL", "YUKLEME_GEMISI": "LOADING VESSEL",
+        "YUKLEME_VOYAGE_NO": "VOYAGE NO", "EC_YUKLEME_TARIHI": "E/C LOADED DATE/TIME",
+    }
+
+    transit_df = cfs_df[cfs_df["KARGO_TIPI"] == "TRANSIT"]
+    vehicle_df = cfs_df[cfs_df["KARGO_TIPI"] == "ARAÇ"]
+
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+        if not transit_df.empty:
+            transit_out = transit_df[list(transit_cols.keys())].rename(columns=transit_cols)
+        else:
+            transit_out = pd.DataFrame(columns=list(transit_cols.values()))
+        transit_out.to_excel(writer, index=False, sheet_name="DAILY TRANSIT STRIPPED")
+
+        if not vehicle_df.empty:
+            vehicle_out = vehicle_df[list(vehicle_cols.keys())].rename(columns=vehicle_cols)
+        else:
+            vehicle_out = pd.DataFrame(columns=list(vehicle_cols.values()))
+        vehicle_out.to_excel(writer, index=False, sheet_name="DAILY VEHICLES STRIPPED")
+
     return buffer.getvalue()
 
 
@@ -2139,8 +2383,8 @@ line_options = [t("line_not_selected")] + available_lines
 # SEKMELER
 # =========================================================
 
-tab_single, tab_batch, tab_gate, tab_load = st.tabs(
-    [t("tab_single"), t("tab_batch"), t("tab_gate"), t("tab_load")]
+tab_single, tab_batch, tab_gate, tab_load, tab_cfs = st.tabs(
+    [t("tab_single"), t("tab_batch"), t("tab_gate"), t("tab_load"), t("tab_cfs")]
 )
 
 
@@ -2960,6 +3204,340 @@ with tab_load:
                     t("excel_download"),
                     data=excel_bytes_l,
                     file_name=f"gemiye_yukleme_{range_start_l.strftime('%Y%m%d')}_{range_end_l.strftime('%Y%m%d')}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True
+                )
+
+    st.caption(t("movements_persistence_note"))
+
+
+# ---------------------------------------------------------
+# CFS İÇ BOŞALTIM
+# ---------------------------------------------------------
+
+with tab_cfs:
+
+    cfs_records = load_cfs_records()
+
+    today_str = datetime.now().strftime("%d.%m.%Y")
+    month_str = datetime.now().strftime(".%m.%Y")
+
+    cfs_today = cfs_records[cfs_records["BOSALTIM_TARIHI"] == today_str] if not cfs_records.empty else cfs_records
+    cfs_this_month = cfs_records[cfs_records["BOSALTIM_TARIHI"].str.endswith(month_str)] if not cfs_records.empty else cfs_records
+
+    st.subheader(t("cfs_header"))
+    st.caption(t("cfs_caption"))
+
+    cf1, cf2, cf3 = st.columns(3)
+
+    with cf1:
+        st.html(f"""
+            <div class="stat-card">
+                <div class="stat-accent-blue"></div>
+                <div class="stat-icon">📥</div>
+                <div class="stat-label">{t('cfs_today')}</div>
+                <div class="stat-value">{len(cfs_today):,}</div>
+            </div>
+        """)
+
+    with cf2:
+        st.html(f"""
+            <div class="stat-card">
+                <div class="stat-accent-blue"></div>
+                <div class="stat-icon">📅</div>
+                <div class="stat-label">{t('cfs_this_month')}</div>
+                <div class="stat-value">{len(cfs_this_month):,}</div>
+            </div>
+        """)
+
+    with cf3:
+        st.html(f"""
+            <div class="stat-card">
+                <div class="stat-accent-green"></div>
+                <div class="stat-icon">▣</div>
+                <div class="stat-label">{t('cfs_total')}</div>
+                <div class="stat-value">{len(cfs_records):,}</div>
+            </div>
+        """)
+
+    st.write("")
+
+    # -------------------------------------------------
+    # KAYIT FORMU
+    # -------------------------------------------------
+
+    with st.container(border=True):
+
+        st.markdown(t("cfs_save_header"))
+
+        cargo_type_options = [t("cfs_cargo_type_transit"), t("cfs_cargo_type_vehicle")]
+        cfs_cargo_type = st.radio(
+            t("cfs_cargo_type_label"),
+            options=cargo_type_options,
+            horizontal=True,
+            key="cfs_cargo_type_select"
+        )
+        is_vehicle_cargo = cfs_cargo_type == t("cfs_cargo_type_vehicle")
+
+        cc1, cc2 = st.columns([2, 1])
+
+        with cc1:
+            cfs_container_input = st.text_input(
+                t("container_number_label"),
+                placeholder=t("container_number_placeholder"),
+                max_chars=20,
+                key="cfs_container_query"
+            )
+
+        with cc2:
+            cfs_size = st.selectbox(t("cfs_size_label"), ["20", "40", "45"], index=1, key="cfs_size_select")
+
+        cfs_normalized = normalize_container(cfs_container_input)
+
+        if cfs_normalized:
+            if is_valid_format(cfs_normalized):
+                st.html(f'<div class="format-hint format-ok">✓ {t("format_valid")} — {safe(cfs_normalized)}</div>')
+            else:
+                st.html(
+                    f'<div class="format-hint format-bad">⚠ {t("invalid_format_short")} {safe(cfs_normalized)}</div>'
+                )
+
+        cv1, cv2 = st.columns(2)
+
+        with cv1:
+            cfs_vessel = st.text_input(
+                t("cfs_vessel_label"),
+                placeholder=t("cfs_vessel_placeholder"),
+                key="cfs_vessel_input"
+            )
+
+        with cv2:
+            cfs_voyage = st.text_input(
+                t("cfs_voyage_label"),
+                placeholder=t("cfs_voyage_placeholder"),
+                key="cfs_voyage_input"
+            )
+
+        ca1, ca2 = st.columns(2)
+
+        with ca1:
+            cfs_agent = st.selectbox(t("cfs_agent_label"), line_options, key="cfs_agent_select")
+
+        with ca2:
+            cfs_remark = st.text_input(
+                t("cfs_remark_label"),
+                placeholder=t("cfs_remark_placeholder"),
+                key="cfs_remark_input"
+            )
+
+        cd1, cd2 = st.columns(2)
+
+        with cd1:
+            cfs_stripped_date = st.date_input(
+                t("cfs_stripped_date_label"),
+                value=datetime.now().date(),
+                key="cfs_stripped_date_input"
+            )
+
+        with cd2:
+            cfs_terminal = st.text_input(
+                t("cfs_terminal_label"),
+                placeholder=t("cfs_terminal_placeholder"),
+                key="cfs_terminal_input"
+            )
+
+        if not is_vehicle_cargo:
+            cfs_destination = st.text_input(
+                t("cfs_destination_label"),
+                placeholder=t("cfs_destination_placeholder"),
+                key="cfs_destination_input"
+            )
+        else:
+            cfs_destination = ""
+
+        cfs_empty_date = ""
+        cfs_exit_date = ""
+        cfs_vehicle_count = ""
+        cfs_model = ""
+        cfs_chassis = ""
+        cfs_loading_vessel = ""
+        cfs_loading_voyage = ""
+        cfs_ec_loaded = ""
+
+        with st.expander(t("cfs_optional_expander")):
+
+            ce1, ce2 = st.columns(2)
+
+            with ce1:
+                cfs_empty_date_val = st.date_input(
+                    t("cfs_empty_date_label"),
+                    value=None,
+                    key="cfs_empty_date_input"
+                )
+                cfs_empty_date = cfs_empty_date_val.strftime("%d.%m.%Y") if cfs_empty_date_val else ""
+
+            with ce2:
+                cfs_exit_date_val = st.date_input(
+                    t("cfs_exit_date_label"),
+                    value=None,
+                    key="cfs_exit_date_input"
+                )
+                cfs_exit_date = cfs_exit_date_val.strftime("%d.%m.%Y") if cfs_exit_date_val else ""
+
+            if is_vehicle_cargo:
+
+                cve1, cve2 = st.columns(2)
+
+                with cve1:
+                    cfs_vehicle_count = st.number_input(
+                        t("cfs_vehicle_count_label"),
+                        min_value=0, max_value=20, step=1, value=0,
+                        key="cfs_vehicle_count_input"
+                    )
+                    cfs_vehicle_count = str(int(cfs_vehicle_count)) if cfs_vehicle_count else ""
+
+                with cve2:
+                    cfs_loading_vessel = st.text_input(
+                        t("cfs_loading_vessel_label"),
+                        key="cfs_loading_vessel_input"
+                    )
+
+                cfs_model = st.text_input(
+                    t("cfs_model_label"),
+                    placeholder=t("cfs_model_placeholder"),
+                    key="cfs_model_input"
+                )
+
+                cfs_chassis = st.text_input(
+                    t("cfs_chassis_label"),
+                    placeholder=t("cfs_chassis_placeholder"),
+                    key="cfs_chassis_input"
+                )
+
+                cvl1, cvl2 = st.columns(2)
+
+                with cvl1:
+                    cfs_loading_voyage = st.text_input(
+                        t("cfs_loading_voyage_label"),
+                        key="cfs_loading_voyage_input"
+                    )
+
+                with cvl2:
+                    cfs_ec_loaded = st.text_input(
+                        t("cfs_ec_loaded_label"),
+                        key="cfs_ec_loaded_input"
+                    )
+
+        cfs_save_clicked = st.button(
+            t("cfs_save_button"),
+            type="primary",
+            use_container_width=True,
+            key="save_cfs_button"
+        )
+
+        if cfs_save_clicked:
+            if not cfs_normalized:
+                st.warning(t("enter_container_warning"))
+            else:
+                save_cfs_record({
+                    "KONTEYNER": cfs_normalized,
+                    "BOYUT": cfs_size,
+                    "GEMI_ADI": cfs_vessel,
+                    "VOYAGE_NUMBER": cfs_voyage,
+                    "AGENT": cfs_agent if cfs_agent != t("line_not_selected") else "",
+                    "REMARK": cfs_remark,
+                    "KARGO_TIPI": "ARAÇ" if is_vehicle_cargo else "TRANSIT",
+                    "BOSALTIM_TARIHI": cfs_stripped_date.strftime("%d.%m.%Y"),
+                    "DESTINATION": cfs_destination,
+                    "TERMINAL": cfs_terminal,
+                    "BOS_KONTEYNER_TARIHI": cfs_empty_date,
+                    "CIKIS_TARIHI": cfs_exit_date,
+                    "ARAC_SAYISI": cfs_vehicle_count,
+                    "MODEL": cfs_model,
+                    "SASI_NUMARASI": cfs_chassis,
+                    "YUKLEME_GEMISI": cfs_loading_vessel,
+                    "YUKLEME_VOYAGE_NO": cfs_loading_voyage,
+                    "EC_YUKLEME_TARIHI": cfs_ec_loaded,
+                })
+                st.session_state.toast_message = f"{t('cfs_saved')} {cfs_normalized}"
+                st.rerun()
+
+    st.write("")
+
+    # -------------------------------------------------
+    # SON KAYITLAR
+    # -------------------------------------------------
+
+    with st.expander(f"{t('cfs_recent')} ({len(cfs_records)} {t('record_count_suffix')})", expanded=False):
+
+        if cfs_records.empty:
+            st.html(f"""
+                <div class="empty-state">
+                    <div class="empty-state-icon">📥</div>
+                    <div class="empty-state-title">{t('cfs_empty_title')}</div>
+                    <div class="empty-state-sub">{t('cfs_empty_sub')}</div>
+                </div>
+            """)
+        else:
+            recent_cfs = cfs_records.iloc[::-1].head(20)
+            st.dataframe(localize_cfs_display(recent_cfs), use_container_width=True, hide_index=True)
+
+            undo_cfs_clicked = st.button(
+                t("undo_last"),
+                key="undo_cfs_button",
+                help=t("undo_help")
+            )
+
+            if undo_cfs_clicked:
+                undone = undo_last_cfs_record()
+                if undone:
+                    st.session_state.toast_message = f"{t('undone')} {undone['KONTEYNER']}"
+                    st.rerun()
+
+    # -------------------------------------------------
+    # TARİH BAZLI EXCEL RAPORU
+    # -------------------------------------------------
+
+    with st.container(border=True):
+
+        st.markdown(t("cfs_report_header"))
+        st.caption(t("cfs_report_caption"))
+
+        cfs_dated = cfs_records_with_parsed_date(cfs_records)
+
+        if cfs_dated.empty or cfs_dated["BOSALTIM_TARIHI_DT"].isna().all():
+            st.caption(t("cfs_report_empty"))
+        else:
+            cfs_min_date = cfs_dated["BOSALTIM_TARIHI_DT"].min().date()
+            cfs_max_date = cfs_dated["BOSALTIM_TARIHI_DT"].max().date()
+
+            cfs_date_range = st.date_input(
+                t("date_range_label"),
+                value=(cfs_min_date, cfs_max_date),
+                min_value=cfs_min_date,
+                max_value=cfs_max_date,
+                key="cfs_report_date_range"
+            )
+
+            if isinstance(cfs_date_range, tuple) and len(cfs_date_range) == 2:
+                cfs_range_start, cfs_range_end = cfs_date_range
+            else:
+                cfs_range_start = cfs_range_end = cfs_date_range
+
+            cfs_mask = (
+                (cfs_dated["BOSALTIM_TARIHI_DT"].dt.date >= cfs_range_start)
+                & (cfs_dated["BOSALTIM_TARIHI_DT"].dt.date <= cfs_range_end)
+            )
+            filtered_cfs = cfs_dated[cfs_mask].drop(columns=["BOSALTIM_TARIHI_DT"])
+
+            st.caption(t("cfs_records_found", count=len(filtered_cfs)))
+
+            if not filtered_cfs.empty:
+                cfs_excel_bytes = build_cfs_excel_bytes(filtered_cfs)
+                st.download_button(
+                    t("excel_download"),
+                    data=cfs_excel_bytes,
+                    file_name=f"cfs_bosaltim_{cfs_range_start.strftime('%Y%m%d')}_{cfs_range_end.strftime('%Y%m%d')}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True
                 )
