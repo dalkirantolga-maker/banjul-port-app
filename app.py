@@ -32,6 +32,7 @@ st.set_page_config(
 EXCEL_FILE = "containers.xlsx"
 MOVEMENTS_FILE = "hareketler.csv"
 CFS_FILE = "cfs_bosaltim.csv"
+SEARCH_HISTORY_FILE = "arama_gecmisi.csv"
 MAX_HISTORY = 6
 
 # ALPORT Banjul logosu (base64 gömülü — ayrı dosya taşımaya gerek yok)
@@ -87,6 +88,9 @@ LINE_COLORS = {
 if "search_history" not in st.session_state:
     st.session_state.search_history = []
 
+if "history_hydrated" not in st.session_state:
+    st.session_state.history_hydrated = False
+
 if "high_contrast" not in st.session_state:
     st.session_state.high_contrast = False
 
@@ -134,6 +138,23 @@ TRANSLATIONS = {
         "add_home_screen_title": "📱 Ana Ekrana Ekle (uygulama gibi kullan)",
         "add_home_screen_ios": "**iPhone (Safari):** Paylaş simgesine dokun (kare + ok) → \"Ana Ekrana Ekle\" seçeneğine dokun.",
         "add_home_screen_android": "**Android (Chrome):** Sağ üstteki ⋮ menüsüne dokun → \"Ana ekrana ekle\" veya \"Uygulama yükle\" seçeneğine dokun.",
+        "cfs_recon_title": "🔗 CFS ↔ Kapı/Gemi Uzlaştırması",
+        "cfs_recon_caption": "CFS'de boşaltılmış ama henüz ne kapı çıkışı ne de gemiye yükleme kaydı olmayan konteynerler.",
+        "cfs_recon_empty": "Tüm CFS kayıtları kapı çıkışı veya gemiye yükleme ile eşleşiyor — uzlaşmayan kayıt yok.",
+        "cfs_recon_found": "⚠ {count} konteyner CFS'de boşaltıldı ama hâlâ kapı çıkışı/gemiye yükleme kaydı yok.",
+        "vessel_view_title": "🚢 Gemi / Voyage Bazlı Görünüm",
+        "vessel_view_caption": "Bir gemi ve sefer seçerek, o seferle gelen konteynerlerin şu anki durumunu görün.",
+        "vessel_view_select": "Gemi / Voyage Seçin",
+        "vessel_view_empty": "Ana veritabanında gemi/voyage bilgisi bulunamadı.",
+        "vessel_view_total": "Toplam Konteyner",
+        "vessel_view_remaining": "Sahada Kalan",
+        "vessel_view_gate": "Kapı Çıkışı Yaptı",
+        "vessel_view_loaded": "Gemiye Yüklendi",
+        "vessel_view_cfs": "CFS'de Boşaltıldı",
+        "vessel_view_list_title": "Sahada Kalan Konteynerler",
+        "consolidated_report_title": "📊 Konsolide Rapor",
+        "consolidated_report_caption": "Bir tarih aralığı seçip; envanter özeti, hat kırılımı, bekleme süresi ve dönem içi hareketleri tek bir Excel dosyasında indirin.",
+        "consolidated_report_button": "📥 Konsolide Raporu İndir (Excel)",
 
         "hero_brand": "LİMAN OPERASYONLARI",
         "hero_title": "Konteyner Takip ve Doğrulama Sistemi",
@@ -369,6 +390,23 @@ TRANSLATIONS = {
         "add_home_screen_title": "📱 Add to Home Screen (use it like an app)",
         "add_home_screen_ios": "**iPhone (Safari):** Tap the Share icon (square with an arrow) → tap \"Add to Home Screen\".",
         "add_home_screen_android": "**Android (Chrome):** Tap the ⋮ menu in the top right → tap \"Add to Home screen\" or \"Install app\".",
+        "cfs_recon_title": "🔗 CFS ↔ Gate/Load Reconciliation",
+        "cfs_recon_caption": "Containers stripped at CFS that don't yet have either a gate exit or vessel loading record.",
+        "cfs_recon_empty": "All CFS records match a gate exit or vessel loading — nothing unreconciled.",
+        "cfs_recon_found": "⚠ {count} containers were stripped at CFS but still have no gate exit / vessel loading record.",
+        "vessel_view_title": "🚢 Vessel / Voyage View",
+        "vessel_view_caption": "Select a vessel and voyage to see the current status of the containers that arrived on it.",
+        "vessel_view_select": "Select Vessel / Voyage",
+        "vessel_view_empty": "No vessel/voyage data found in the main database.",
+        "vessel_view_total": "Total Containers",
+        "vessel_view_remaining": "Remaining in Yard",
+        "vessel_view_gate": "Gate Exit Done",
+        "vessel_view_loaded": "Loaded on Vessel",
+        "vessel_view_cfs": "Stripped at CFS",
+        "vessel_view_list_title": "Containers Remaining in Yard",
+        "consolidated_report_title": "📊 Consolidated Report",
+        "consolidated_report_caption": "Select a date range and download an inventory summary, line breakdown, dwell time, and period movements — all in one Excel file.",
+        "consolidated_report_button": "📥 Download Consolidated Report (Excel)",
 
         "hero_brand": "PORT OPERATIONS",
         "hero_title": "Container Tracking & Verification System",
@@ -1820,6 +1858,67 @@ def build_cfs_excel_bytes(cfs_df):
     return buffer.getvalue()
 
 
+def build_consolidated_report_excel(df, remaining_df, movements, cfs_records, start_date, end_date, dash_stats, line_breakdown, dwell_df):
+    """Dashboard'daki tüm ana metrikleri (envanter özeti, hat kırılımı, bekleme
+    süresi, dönem içi hareketler) tek bir çok sekmeli Excel raporunda toplar."""
+
+    buffer = io.BytesIO()
+
+    with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+
+        # --- ÖZET ---
+        summary_rows = [
+            {"Metrik": "Rapor Aralığı", "Değer": f"{start_date.strftime('%d.%m.%Y')} — {end_date.strftime('%d.%m.%Y')}"},
+            {"Metrik": "Oluşturulma Tarihi", "Değer": datetime.now().strftime("%d.%m.%Y %H:%M")},
+            {"Metrik": "Toplam Envanter", "Değer": len(df)},
+            {"Metrik": "Limanda Kalan", "Değer": len(remaining_df)},
+            {"Metrik": "Dolu 20'", "Değer": dash_stats["dolu_20"]},
+            {"Metrik": "Boş 20'", "Değer": dash_stats["bos_20"]},
+            {"Metrik": "Dolu 40'", "Değer": dash_stats["dolu_40"]},
+            {"Metrik": "Boş 40'", "Değer": dash_stats["bos_40"]},
+            {"Metrik": "Toplam TEU", "Değer": dash_stats["total_teu"]},
+        ]
+        pd.DataFrame(summary_rows).to_excel(writer, index=False, sheet_name="Özet")
+
+        # --- HAT BAZLI KIRILIM ---
+        if not line_breakdown.empty:
+            line_breakdown.to_excel(writer, index=False, sheet_name="Hat Bazlı Kırılım")
+        else:
+            pd.DataFrame(columns=["Hat"]).to_excel(writer, index=False, sheet_name="Hat Bazlı Kırılım")
+
+        # --- BEKLEME SÜRESİ ---
+        if not dwell_df.empty:
+            dwell_df.drop(columns=["Kritik"], errors="ignore").to_excel(writer, index=False, sheet_name="Bekleme Süresi")
+        else:
+            pd.DataFrame(columns=["Konteyner"]).to_excel(writer, index=False, sheet_name="Bekleme Süresi")
+
+        # --- DÖNEM İÇİ HAREKETLER (kapı çıkışı + gemiye yükleme) ---
+        if not movements.empty:
+            mv_dated = movements_with_parsed_date(movements)
+            mv_mask = (mv_dated["TARIH_DT"].dt.date >= start_date) & (mv_dated["TARIH_DT"].dt.date <= end_date)
+            mv_period = mv_dated[mv_mask].drop(columns=["TARIH_DT"], errors="ignore")
+        else:
+            mv_period = movements
+        if not mv_period.empty:
+            mv_period.to_excel(writer, index=False, sheet_name="Kapı-Gemi Hareketleri")
+        else:
+            pd.DataFrame(columns=MOVEMENT_COLUMNS).to_excel(writer, index=False, sheet_name="Kapı-Gemi Hareketleri")
+
+        # --- DÖNEM İÇİ CFS KAYITLARI ---
+        if not cfs_records.empty:
+            cfs_dated = cfs_records_with_parsed_date(cfs_records)
+            cfs_mask = (cfs_dated["BOSALTIM_TARIHI_DT"].dt.date >= start_date) & (cfs_dated["BOSALTIM_TARIHI_DT"].dt.date <= end_date)
+            cfs_period = cfs_dated[cfs_mask].drop(columns=["BOSALTIM_TARIHI_DT"], errors="ignore")
+        else:
+            cfs_period = cfs_records
+        if not cfs_period.empty:
+            cfs_period.to_excel(writer, index=False, sheet_name="CFS Kayıtları")
+        else:
+            pd.DataFrame(columns=CFS_COLUMNS).to_excel(writer, index=False, sheet_name="CFS Kayıtları")
+
+    return buffer.getvalue()
+
+
 def classify_size(size_value):
     """SIZE sütunundaki değerden 20 ya da 40 ayak sınıfını tespit eder
     (örn. '20', '20DV', "20'", 'GP20' gibi farklı yazımları destekler)."""
@@ -1933,6 +2032,36 @@ def compute_line_breakdown(remaining_df):
     return breakdown
 
 
+def compute_cfs_reconciliation(cfs_records, movements):
+    """CFS'de boşaltılan konteynerler arasında, henüz ne kapı çıkışı ne de
+    gemiye yükleme kaydı olmayanları (yani 'takılı kalmış' olabilecekleri) bulur."""
+
+    if cfs_records.empty:
+        return pd.DataFrame()
+
+    gate_set = set(movements[movements["HAREKET"] == "Kapı Çıkışı"]["KONTEYNER"]) if not movements.empty else set()
+    load_set = set(movements[movements["HAREKET"] == "Gemiye Yükleme"]["KONTEYNER"]) if not movements.empty else set()
+
+    work = cfs_records.copy()
+    work["_HAS_GATE"] = work["KONTEYNER"].isin(gate_set)
+    work["_HAS_LOAD"] = work["KONTEYNER"].isin(load_set)
+
+    pending = work[~work["_HAS_GATE"] & ~work["_HAS_LOAD"]].copy()
+    if pending.empty:
+        return pd.DataFrame()
+
+    pending["_STRIP_DT"] = pd.to_datetime(pending["BOSALTIM_TARIHI"], format="%d.%m.%Y", errors="coerce")
+    today = pd.Timestamp(datetime.now().date())
+    pending["_DAYS"] = (today - pending["_STRIP_DT"]).dt.days
+
+    result = pending[["KONTEYNER", "KARGO_TIPI", "BOSALTIM_TARIHI", "_DAYS"]].copy()
+    result.columns = ["Konteyner", "Kargo Tipi", "Boşaltım Tarihi", "Gün"]
+    result = result.sort_values("Gün", ascending=False)
+
+    return result
+
+
+
 def compute_dwell_time(remaining_df, threshold_days=21):
     """Limanda kalan konteynerlerin tahliye tarihinden bugüne kaç gün geçtiğini
     hesaplar. DISCHARGE DATE ayrıştırılamayan kayıtlar sonuca dahil edilmez."""
@@ -1997,6 +2126,28 @@ def get_container_timeline(container_number):
 
     events.sort(key=_sort_key)
     return events
+
+
+def compute_vessel_summary(df, movements, cfs_records, vessel_name, voyage_number):
+    """Belirli bir gemi/voyage ile gelen konteynerlerin şu anki durumunu özetler:
+    kaçı sahada, kaçı kapıdan çıktı, kaçı gemiye yüklendi, kaçı CFS'de boşaltıldı."""
+
+    subset = df[(df["VESSEL NAME"] == vessel_name) & (df["VOYAGE NUMBER"] == voyage_number)]
+    container_set = set(subset["_SEARCH"])
+
+    gate_set = set(movements[movements["HAREKET"] == "Kapı Çıkışı"]["KONTEYNER"]) if not movements.empty else set()
+    load_set = set(movements[movements["HAREKET"] == "Gemiye Yükleme"]["KONTEYNER"]) if not movements.empty else set()
+    cfs_set = set(cfs_records["KONTEYNER"]) if not cfs_records.empty else set()
+    moved_out = gate_set | load_set
+
+    return {
+        "total": len(container_set),
+        "remaining": len(container_set - moved_out),
+        "gate_out": len(container_set & gate_set),
+        "loaded": len(container_set & load_set),
+        "cfs": len(container_set & cfs_set),
+        "remaining_containers": subset[~subset["_SEARCH"].isin(moved_out)],
+    }
 
 
 def compute_daily_trend(movements, days=14):
@@ -2080,6 +2231,37 @@ def lookup_container(df, raw_number):
     return "ok", result.iloc[0], normalized
 
 
+def load_search_history_from_disk(limit=MAX_HISTORY):
+    """Diskteki arama geçmişi dosyasından son aramaları okur (oturumlar arası kalıcı)."""
+
+    if not os.path.exists(SEARCH_HISTORY_FILE):
+        return []
+    try:
+        hist_df = pd.read_csv(SEARCH_HISTORY_FILE, dtype=str)
+        hist_df = hist_df.tail(limit)
+        entries = [{"number": row["KONTEYNER"], "status": row["STATUS"]} for _, row in hist_df.iterrows()]
+        return entries[::-1]
+    except Exception:
+        return []
+
+
+def append_search_history_to_disk(number, status):
+    """Yeni bir aramayı diskteki arama geçmişi dosyasına ekler."""
+
+    row = pd.DataFrame([{
+        "KONTEYNER": number,
+        "STATUS": status,
+        "TARIH": datetime.now().strftime("%d.%m.%Y %H:%M"),
+    }])
+    try:
+        if os.path.exists(SEARCH_HISTORY_FILE):
+            row.to_csv(SEARCH_HISTORY_FILE, mode="a", header=False, index=False)
+        else:
+            row.to_csv(SEARCH_HISTORY_FILE, mode="w", header=True, index=False)
+    except Exception:
+        pass
+
+
 def push_history(number, status):
     entry = {"number": number, "status": status}
 
@@ -2091,9 +2273,16 @@ def push_history(number, status):
     st.session_state.search_history.insert(0, entry)
     st.session_state.search_history = st.session_state.search_history[:MAX_HISTORY]
 
+    append_search_history_to_disk(number, status)
+
 
 def select_history_number(number):
     st.session_state.container_query = number
+
+
+if not st.session_state.history_hydrated:
+    st.session_state.search_history = load_search_history_from_disk()
+    st.session_state.history_hydrated = True
 
 
 def _rank_clusters(clusters, top_n):
@@ -2704,6 +2893,144 @@ with st.expander(t("dwell_title"), expanded=False):
         st.dataframe(top_dwell, use_container_width=True, hide_index=True)
 
 st.write("")
+
+# -------------------------------------------------
+# GEMİ / VOYAGE BAZLI GÖRÜNÜM
+# -------------------------------------------------
+
+with st.expander(t("vessel_view_title"), expanded=False):
+
+    st.caption(t("vessel_view_caption"))
+
+    _vessel_voyage_pairs = df[(df["VESSEL NAME"] != "") & (df["VOYAGE NUMBER"] != "")][
+        ["VESSEL NAME", "VOYAGE NUMBER"]
+    ].drop_duplicates()
+
+    if _vessel_voyage_pairs.empty:
+        st.html(f"""
+            <div class="empty-state">
+                <div class="empty-state-icon">🚢</div>
+                <div class="empty-state-title">{t('vessel_view_empty')}</div>
+            </div>
+        """)
+    else:
+        _vessel_options = sorted(
+            (row["VESSEL NAME"], row["VOYAGE NUMBER"]) for _, row in _vessel_voyage_pairs.iterrows()
+        )
+
+        _selected_vessel_voyage = st.selectbox(
+            t("vessel_view_select"),
+            options=_vessel_options,
+            format_func=lambda x: f"{x[0]} — {x[1]}",
+            key="vessel_view_select"
+        )
+
+        if _selected_vessel_voyage:
+            _cfs_for_vessel = load_cfs_records()
+            _vessel_summary = compute_vessel_summary(
+                df, _movements_for_dashboard, _cfs_for_vessel,
+                _selected_vessel_voyage[0], _selected_vessel_voyage[1]
+            )
+
+            vv1, vv2, vv3, vv4, vv5 = st.columns(5)
+
+            with vv1:
+                st.html(f"""
+                    <div class="dash-card">
+                        <div class="dash-card-accent" style="background:var(--navy);"></div>
+                        <div class="dash-icon">▣</div>
+                        <div class="dash-label">{t('vessel_view_total')}</div>
+                        <div class="dash-value">{_vessel_summary['total']:,}</div>
+                    </div>
+                """)
+            with vv2:
+                st.html(f"""
+                    <div class="dash-card">
+                        <div class="dash-card-accent" style="background:var(--brass);"></div>
+                        <div class="dash-icon">◷</div>
+                        <div class="dash-label">{t('vessel_view_remaining')}</div>
+                        <div class="dash-value">{_vessel_summary['remaining']:,}</div>
+                    </div>
+                """)
+            with vv3:
+                st.html(f"""
+                    <div class="dash-card">
+                        <div class="dash-card-accent" style="background:#9CA8B4;"></div>
+                        <div class="dash-icon">🚪</div>
+                        <div class="dash-label">{t('vessel_view_gate')}</div>
+                        <div class="dash-value">{_vessel_summary['gate_out']:,}</div>
+                    </div>
+                """)
+            with vv4:
+                st.html(f"""
+                    <div class="dash-card">
+                        <div class="dash-card-accent" style="background:#1F6E4A;"></div>
+                        <div class="dash-icon">🚢</div>
+                        <div class="dash-label">{t('vessel_view_loaded')}</div>
+                        <div class="dash-value">{_vessel_summary['loaded']:,}</div>
+                    </div>
+                """)
+            with vv5:
+                st.html(f"""
+                    <div class="dash-card">
+                        <div class="dash-card-accent" style="background:#0F2A44;"></div>
+                        <div class="dash-icon">📥</div>
+                        <div class="dash-label">{t('vessel_view_cfs')}</div>
+                        <div class="dash-value">{_vessel_summary['cfs']:,}</div>
+                    </div>
+                """)
+
+            st.write("")
+
+            if not _vessel_summary["remaining_containers"].empty:
+                st.caption(t("vessel_view_list_title"))
+                _vv_display_cols = [c for c in ["CONTAINER", "AGENT", "SIZE", "FULL-MTY", "AREA"] if c in _vessel_summary["remaining_containers"].columns]
+                st.dataframe(
+                    _vessel_summary["remaining_containers"][_vv_display_cols],
+                    use_container_width=True, hide_index=True
+                )
+
+st.write("")
+
+# -------------------------------------------------
+# KONSOLİDE RAPOR
+# -------------------------------------------------
+
+with st.expander(t("consolidated_report_title"), expanded=False):
+
+    st.caption(t("consolidated_report_caption"))
+
+    _report_default_start = datetime.now().date() - timedelta(days=30)
+    _report_date_range = st.date_input(
+        t("date_range_label"),
+        value=(_report_default_start, datetime.now().date()),
+        key="consolidated_report_date_range"
+    )
+
+    if isinstance(_report_date_range, tuple) and len(_report_date_range) == 2:
+        _report_start, _report_end = _report_date_range
+    else:
+        _report_start = _report_end = _report_date_range
+
+    _cfs_for_report = load_cfs_records()
+    _line_breakdown_for_report = compute_line_breakdown(_remaining_for_dashboard)
+    _dwell_for_report = compute_dwell_time(_remaining_for_dashboard, threshold_days=21)
+
+    _consolidated_bytes = build_consolidated_report_excel(
+        df, _remaining_for_dashboard, _movements_for_dashboard, _cfs_for_report,
+        _report_start, _report_end, _dash, _line_breakdown_for_report, _dwell_for_report
+    )
+
+    st.download_button(
+        t("consolidated_report_button"),
+        data=_consolidated_bytes,
+        file_name=f"konsolide_rapor_{_report_start.strftime('%Y%m%d')}_{_report_end.strftime('%Y%m%d')}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        use_container_width=True
+    )
+
+st.write("")
+
 
 st.write("")
 
@@ -3926,6 +4253,30 @@ with tab_cfs:
                 )
 
     st.caption(t("movements_persistence_note"))
+
+    st.write("")
+
+    # -------------------------------------------------
+    # CFS ↔ KAPI/GEMİ UZLAŞTIRMASI
+    # -------------------------------------------------
+
+    with st.expander(t("cfs_recon_title"), expanded=False):
+
+        st.caption(t("cfs_recon_caption"))
+
+        _recon_movements = load_movements()
+        _recon_df = compute_cfs_reconciliation(cfs_records, _recon_movements)
+
+        if _recon_df.empty:
+            st.html(f"""
+                <div class="empty-state">
+                    <div class="empty-state-icon">🔗</div>
+                    <div class="empty-state-title">{t('cfs_recon_empty')}</div>
+                </div>
+            """)
+        else:
+            st.caption(t("cfs_recon_found", count=len(_recon_df)))
+            st.dataframe(_recon_df, use_container_width=True, hide_index=True)
 
 
 
