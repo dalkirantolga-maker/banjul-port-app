@@ -33,7 +33,7 @@ EXCEL_FILE = "containers.xlsx"
 MOVEMENTS_FILE = "hareketler.csv"
 CFS_FILE = "cfs_bosaltim.csv"
 SEARCH_HISTORY_FILE = "arama_gecmisi.csv"
-CONTAINER_HISTORY_FILE = "CONTAINER.xlsx"
+CONTAINER_HISTORY_FILE = "performans.xlsx"
 MAX_HISTORY = 6
 
 # ALPORT Banjul logosu (base64 gömülü — ayrı dosya taşımaya gerek yok)
@@ -168,9 +168,9 @@ TRANSLATIONS = {
         "nav_dashboard": "📊 Dashboard",
         "tab_vessel_perf": "📈 Yıllık Performans",
         "vperf_title": "Gemi Sefer Performans Analizi",
-        "vperf_caption": "CONTAINER.xlsx dosyasındaki 2024–2026 yıllarına ait gemi sefer verilerine dayalı özet rapor.",
-        "vperf_file_missing": "CONTAINER.xlsx dosyası bulunamadı. Bu raporun görünmesi için dosyayı diğerleriyle (containers.xlsx vb.) aynı klasöre ekle.",
-        "vperf_file_error": "CONTAINER.xlsx dosyası okunamadı — sekme yapısının beklenen formatta olduğundan emin ol.",
+        "vperf_caption": "performans.xlsx dosyasındaki 2024–2026 yıllarına ait gemi sefer verilerine dayalı özet rapor.",
+        "vperf_file_missing": "performans.xlsx dosyası bulunamadı. Bu raporun görünmesi için dosyayı diğerleriyle (containers.xlsx vb.) aynı klasöre ekle.",
+        "vperf_file_error": "performans.xlsx dosyası okunamadı — sekme yapısının beklenen formatta olduğundan emin ol.",
         "vperf_no_data": "Seçilen yıl için veri bulunamadı.",
         "vperf_year_select": "Yıl Seçin",
         "vperf_kpi_calls": "Gemi Seferi",
@@ -451,9 +451,9 @@ TRANSLATIONS = {
         "nav_dashboard": "📊 Dashboard",
         "tab_vessel_perf": "📈 Annual Performance",
         "vperf_title": "Vessel Call Performance Analysis",
-        "vperf_caption": "Summary report based on vessel call data for 2024–2026 from CONTAINER.xlsx.",
-        "vperf_file_missing": "CONTAINER.xlsx file not found. Add it to the same folder as your other files (containers.xlsx etc.) for this report to appear.",
-        "vperf_file_error": "Could not read CONTAINER.xlsx — make sure the sheet structure matches the expected format.",
+        "vperf_caption": "Summary report based on vessel call data for 2024–2026 from performans.xlsx.",
+        "vperf_file_missing": "performans.xlsx file not found. Add it to the same folder as your other files (containers.xlsx etc.) for this report to appear.",
+        "vperf_file_error": "Could not read performans.xlsx — make sure the sheet structure matches the expected format.",
         "vperf_no_data": "No data found for the selected year.",
         "vperf_year_select": "Select Year",
         "vperf_kpi_calls": "Vessel Calls",
@@ -2191,7 +2191,7 @@ def _find_header_col(header_row, label):
 
 
 def _parse_vessel_year_sheet(excel_file, sheet_name):
-    """CONTAINER.xlsx'teki tek bir yıl sekmesini (2024/2025/2026 gibi) satır satır
+    """performans.xlsx'teki tek bir yıl sekmesini (2024/2025/2026 gibi) satır satır
     gemi seferi (vessel call) verisine dönüştürür. Sütun sırası yıldan yıla küçük
     farklılıklar gösterebildiği için (örn. HATCH COVER sütunu bazı yıllarda yok),
     sabit indeks yerine başlık metnine göre eşleştirme yapılır."""
@@ -2251,7 +2251,7 @@ def _parse_vessel_year_sheet(excel_file, sheet_name):
 
 @st.cache_data(ttl=60)
 def load_vessel_performance_history(file_path, modified_time):
-    """CONTAINER.xlsx dosyasındaki tüm yıl sekmelerini (4 haneli sayısal isimli
+    """performans.xlsx dosyasındaki tüm yıl sekmelerini (4 haneli sayısal isimli
     sekmeler) otomatik bulup birleştirir ve tek bir gemi seferi geçmişi tablosu üretir."""
 
     excel_file = pd.ExcelFile(file_path, engine="openpyxl")
@@ -4812,7 +4812,7 @@ def page_cfs():
 
 
 # ---------------------------------------------------------
-# YILLIK PERFORMANS (CONTAINER.xlsx)
+# YILLIK PERFORMANS (performans.xlsx)
 # ---------------------------------------------------------
 
 def page_vessel_performance():
