@@ -2386,7 +2386,7 @@ def build_vessel_history_excel(history_df, kpis_by_year, monthly_pivot):
     return buffer.getvalue()
 
 
-
+def classify_size(size_value):
     """SIZE sütunundaki değerden 20 ya da 40 ayak sınıfını tespit eder
     (örn. '20', '20DV', "20'", 'GP20' gibi farklı yazımları destekler)."""
 
