@@ -711,7 +711,12 @@ BASE_CSS = """
 
 #MainMenu { visibility: hidden; }
 footer { visibility: hidden; }
-header { visibility: hidden; }
+[data-testid="stToolbarActions"] { display: none !important; }
+.stDeployButton { display: none !important; }
+header {
+    background: transparent !important;
+    box-shadow: none !important;
+}
 
 
 /* =====================================================
