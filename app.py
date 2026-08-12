@@ -33,6 +33,7 @@ EXCEL_FILE = "containers.xlsx"
 MOVEMENTS_FILE = "hareketler.csv"
 CFS_FILE = "cfs_bosaltim.csv"
 SEARCH_HISTORY_FILE = "arama_gecmisi.csv"
+CONTAINER_HISTORY_FILE = "CONTAINER.xlsx"
 MAX_HISTORY = 6
 
 # ALPORT Banjul logosu (base64 gömülü — ayrı dosya taşımaya gerek yok)
@@ -165,6 +166,27 @@ TRANSLATIONS = {
         "gauge_empty_row": "Boş Konteyner",
         "gauge_teu_row": "Toplam TEU",
         "nav_dashboard": "📊 Dashboard",
+        "tab_vessel_perf": "📈 Yıllık Performans",
+        "vperf_title": "Gemi Sefer Performans Analizi",
+        "vperf_caption": "CONTAINER.xlsx dosyasındaki 2024–2026 yıllarına ait gemi sefer verilerine dayalı özet rapor.",
+        "vperf_file_missing": "CONTAINER.xlsx dosyası bulunamadı. Bu raporun görünmesi için dosyayı diğerleriyle (containers.xlsx vb.) aynı klasöre ekle.",
+        "vperf_file_error": "CONTAINER.xlsx dosyası okunamadı — sekme yapısının beklenen formatta olduğundan emin ol.",
+        "vperf_no_data": "Seçilen yıl için veri bulunamadı.",
+        "vperf_year_select": "Yıl Seçin",
+        "vperf_kpi_calls": "Gemi Seferi",
+        "vperf_kpi_teu": "Toplam TEU",
+        "vperf_kpi_containers": "Toplam Konteyner",
+        "vperf_kpi_avg": "Ort. TEU / Sefer",
+        "vperf_kpi_share40": "40' Payı",
+        "vperf_trend_title": "📈 Aylık TEU Trendi (Yıllar Karşılaştırmalı)",
+        "vperf_agent_title": "🚩 Hat Bazlı Performans",
+        "vperf_agent_caption": "Seçilen yıl için hat bazında sefer sayısı, TEU ve pazar payı.",
+        "vperf_breakdown_title": "📦 Konteyner Kategori Kırılımı (TEU)",
+        "vperf_breakdown_caption": "Tahliye, dolu (FCL) yükleme ve boş yükleme kategorilerinin 20'/40' dağılımı.",
+        "vperf_export_title": "📥 Performans Raporunu İndir (Excel)",
+        "vperf_export_caption": "Tüm gemi sefer geçmişini, yıllık KPI özetini ve aylık trendi tek Excel dosyasında indir.",
+        "vperf_export_button": "📥 Excel Olarak İndir",
+        "vperf_yoy_title": "Yıllık Değişim",
 
         "hero_brand": "LİMAN OPERASYONLARI",
         "hero_title": "Konteyner Takip ve Doğrulama Sistemi",
@@ -427,6 +449,27 @@ TRANSLATIONS = {
         "gauge_empty_row": "Empty Containers",
         "gauge_teu_row": "Total TEU",
         "nav_dashboard": "📊 Dashboard",
+        "tab_vessel_perf": "📈 Annual Performance",
+        "vperf_title": "Vessel Call Performance Analysis",
+        "vperf_caption": "Summary report based on vessel call data for 2024–2026 from CONTAINER.xlsx.",
+        "vperf_file_missing": "CONTAINER.xlsx file not found. Add it to the same folder as your other files (containers.xlsx etc.) for this report to appear.",
+        "vperf_file_error": "Could not read CONTAINER.xlsx — make sure the sheet structure matches the expected format.",
+        "vperf_no_data": "No data found for the selected year.",
+        "vperf_year_select": "Select Year",
+        "vperf_kpi_calls": "Vessel Calls",
+        "vperf_kpi_teu": "Total TEU",
+        "vperf_kpi_containers": "Total Containers",
+        "vperf_kpi_avg": "Avg. TEU / Call",
+        "vperf_kpi_share40": "40' Share",
+        "vperf_trend_title": "📈 Monthly TEU Trend (Year Comparison)",
+        "vperf_agent_title": "🚩 Line Performance",
+        "vperf_agent_caption": "Calls, TEU, and market share by line for the selected year.",
+        "vperf_breakdown_title": "📦 Container Category Breakdown (TEU)",
+        "vperf_breakdown_caption": "20'/40' distribution across discharge, full (FCL) loading, and empty loading categories.",
+        "vperf_export_title": "📥 Download Performance Report (Excel)",
+        "vperf_export_caption": "Download the full vessel call history, annual KPI summary, and monthly trend in one Excel file.",
+        "vperf_export_button": "📥 Download as Excel",
+        "vperf_yoy_title": "Year-over-Year Change",
 
         "hero_brand": "PORT OPERATIONS",
         "hero_title": "Container Tracking & Verification System",
@@ -2138,7 +2181,212 @@ def build_consolidated_report_excel(df, remaining_df, movements, cfs_records, st
     return buffer.getvalue()
 
 
-def classify_size(size_value):
+def _find_header_col(header_row, label):
+    """Bir başlık satırında verilen etiketi (case-insensitive, alt string) içeren sütun indeksini bulur."""
+
+    for i, v in enumerate(header_row):
+        if isinstance(v, str) and label.upper() in str(v).upper():
+            return i
+    return None
+
+
+def _parse_vessel_year_sheet(excel_file, sheet_name):
+    """CONTAINER.xlsx'teki tek bir yıl sekmesini (2024/2025/2026 gibi) satır satır
+    gemi seferi (vessel call) verisine dönüştürür. Sütun sırası yıldan yıla küçük
+    farklılıklar gösterebildiği için (örn. HATCH COVER sütunu bazı yıllarda yok),
+    sabit indeks yerine başlık metnine göre eşleştirme yapılır."""
+
+    raw = excel_file.parse(sheet_name, header=None)
+    header0 = raw.iloc[0]
+
+    col_month = _find_header_col(header0, "MONTH")
+    col_vessel = _find_header_col(header0, "VESSEL")
+    col_agent = _find_header_col(header0, "AGENT")
+    col_berth = _find_header_col(header0, "BERTH")
+    col_dep = _find_header_col(header0, "DEPART")
+    col_discharge = _find_header_col(header0, "DISCHARGE")
+    col_fcl = _find_header_col(header0, "FCL")
+    col_empty = _find_header_col(header0, "EMPTY")
+    col_total_teu = _find_header_col(header0, "TOTAL TEU")
+    col_total_cont = _find_header_col(header0, "TOTAL CONTAINER")
+
+    required = [col_month, col_vessel, col_agent, col_discharge, col_fcl, col_empty, col_total_teu, col_total_cont]
+    if any(c is None for c in required):
+        return pd.DataFrame()
+
+    data = raw.iloc[2:].copy()
+
+    result = pd.DataFrame({
+        "MONTH": data[col_month],
+        "VESSEL_NAME": data[col_vessel],
+        "AGENT": data[col_agent],
+        "BERTHING": data[col_berth] if col_berth is not None else None,
+        "DEPARTURE": data[col_dep] if col_dep is not None else None,
+        "DISCHARGE_20": pd.to_numeric(data[col_discharge], errors="coerce"),
+        "DISCHARGE_40": pd.to_numeric(data[col_discharge + 1], errors="coerce"),
+        "FCL_20": pd.to_numeric(data[col_fcl], errors="coerce"),
+        "FCL_40": pd.to_numeric(data[col_fcl + 1], errors="coerce"),
+        "EMPTY_20": pd.to_numeric(data[col_empty], errors="coerce"),
+        "EMPTY_40": pd.to_numeric(data[col_empty + 1], errors="coerce"),
+        "TOTAL_TEU": pd.to_numeric(data[col_total_teu], errors="coerce"),
+        "TOTAL_CONTAINERS": pd.to_numeric(data[col_total_cont], errors="coerce"),
+    })
+
+    result = result[result["VESSEL_NAME"].notna()].copy()
+    # Sayfa sonundaki "TOTAL CALLS" gibi özet satırlarını dışla
+    result = result[~result["VESSEL_NAME"].astype(str).str.upper().str.contains("TOTAL")]
+
+    if result.empty:
+        return result
+
+    result["MONTH"] = result["MONTH"].ffill()
+    result["YEAR"] = int(sheet_name)
+    result["AGENT"] = result["AGENT"].astype(str).str.strip().str.upper().apply(
+        lambda v: LINE_MAP.get(v, v)
+    )
+    result["VESSEL_NAME"] = result["VESSEL_NAME"].astype(str).str.strip()
+
+    return result
+
+
+@st.cache_data(ttl=60)
+def load_vessel_performance_history(file_path, modified_time):
+    """CONTAINER.xlsx dosyasındaki tüm yıl sekmelerini (4 haneli sayısal isimli
+    sekmeler) otomatik bulup birleştirir ve tek bir gemi seferi geçmişi tablosu üretir."""
+
+    excel_file = pd.ExcelFile(file_path, engine="openpyxl")
+    year_sheets = [s for s in excel_file.sheet_names if s.strip().isdigit() and len(s.strip()) == 4]
+
+    frames = []
+    for sheet in sorted(year_sheets):
+        parsed = _parse_vessel_year_sheet(excel_file, sheet)
+        if not parsed.empty:
+            frames.append(parsed)
+
+    if not frames:
+        return pd.DataFrame()
+
+    combined = pd.concat(frames, ignore_index=True)
+    return combined
+
+
+MONTH_ORDER_TR = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+]
+
+MONTH_LABELS = {
+    "tr": {
+        "January": "Ocak", "February": "Şubat", "March": "Mart", "April": "Nisan",
+        "May": "Mayıs", "June": "Haziran", "July": "Temmuz", "August": "Ağustos",
+        "September": "Eylül", "October": "Ekim", "November": "Kasım", "December": "Aralık",
+    },
+    "en": {m: m for m in MONTH_ORDER_TR},
+}
+
+
+def compute_vessel_kpis(history_df, year):
+    """Seçilen yıl için özet KPI'ları hesaplar."""
+
+    sub = history_df[history_df["YEAR"] == year]
+    if sub.empty:
+        return None
+
+    total_teu = sub["TOTAL_TEU"].sum()
+    total_containers = sub["TOTAL_CONTAINERS"].sum()
+    calls = len(sub)
+    avg_teu = total_teu / calls if calls > 0 else 0
+
+    dis40 = sub["DISCHARGE_40"].sum()
+    fcl40 = sub["FCL_40"].sum()
+    empty40 = sub["EMPTY_40"].sum()
+    dis20 = sub["DISCHARGE_20"].sum()
+    fcl20 = sub["FCL_20"].sum()
+    empty20 = sub["EMPTY_20"].sum()
+
+    total_40_units = dis40 + fcl40 + empty40
+    total_20_units = dis20 + fcl20 + empty20
+    total_units = total_40_units + total_20_units
+    share_40 = (total_40_units / total_units) if total_units > 0 else 0
+
+    return {
+        "calls": calls,
+        "total_teu": total_teu,
+        "total_containers": total_containers,
+        "avg_teu": avg_teu,
+        "share_40": share_40,
+        "discharge_20": dis20, "discharge_40": dis40,
+        "fcl_20": fcl20, "fcl_40": fcl40,
+        "empty_20": empty20, "empty_40": empty40,
+    }
+
+
+def compute_monthly_teu_pivot(history_df):
+    """Ay x Yıl şeklinde bir TEU pivot tablosu üretir (trend grafiği için)."""
+
+    if history_df.empty:
+        return pd.DataFrame()
+
+    grouped = history_df.groupby(["YEAR", "MONTH"])["TOTAL_TEU"].sum().reset_index()
+    pivot = grouped.pivot(index="MONTH", columns="YEAR", values="TOTAL_TEU")
+    pivot = pivot.reindex([m for m in MONTH_ORDER_TR if m in pivot.index])
+    pivot.columns = [str(c) for c in pivot.columns]
+    return pivot
+
+
+def compute_agent_performance(history_df, year):
+    """Seçilen yıl için hat (agent) bazında sefer sayısı, TEU ve pay bilgisini hesaplar."""
+
+    sub = history_df[history_df["YEAR"] == year]
+    if sub.empty:
+        return pd.DataFrame()
+
+    grouped = sub.groupby("AGENT").agg(
+        Sefer=("VESSEL_NAME", "count"),
+        TEU=("TOTAL_TEU", "sum"),
+        Konteyner=("TOTAL_CONTAINERS", "sum"),
+    ).reset_index()
+
+    total_teu = grouped["TEU"].sum()
+    grouped["Pay"] = grouped["TEU"] / total_teu if total_teu > 0 else 0
+    grouped = grouped.sort_values("TEU", ascending=False).reset_index(drop=True)
+    grouped.columns = ["Hat", "Sefer", "TEU", "Konteyner", "Pay"]
+
+    return grouped
+
+
+def build_vessel_history_excel(history_df, kpis_by_year, monthly_pivot):
+    """Gemi performans geçmişini, KPI özetini ve aylık trendi tek bir Excel raporunda toplar."""
+
+    buffer = io.BytesIO()
+
+    with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+        export_cols = [
+            "YEAR", "MONTH", "VESSEL_NAME", "AGENT", "BERTHING", "DEPARTURE",
+            "DISCHARGE_20", "DISCHARGE_40", "FCL_20", "FCL_40", "EMPTY_20", "EMPTY_40",
+            "TOTAL_TEU", "TOTAL_CONTAINERS",
+        ]
+        history_df[export_cols].to_excel(writer, index=False, sheet_name="Gemi Seferleri")
+
+        kpi_rows = []
+        for year, kpi in sorted(kpis_by_year.items()):
+            if kpi is None:
+                continue
+            kpi_rows.append({
+                "Yıl": year, "Sefer": kpi["calls"], "Toplam TEU": round(kpi["total_teu"]),
+                "Toplam Konteyner": round(kpi["total_containers"]),
+                "Ort. TEU/Sefer": round(kpi["avg_teu"], 1),
+                "40' Payı": round(kpi["share_40"] * 100, 1),
+            })
+        pd.DataFrame(kpi_rows).to_excel(writer, index=False, sheet_name="Yıllık KPI")
+
+        if not monthly_pivot.empty:
+            monthly_pivot.to_excel(writer, sheet_name="Aylık TEU Trend")
+
+    return buffer.getvalue()
+
+
+
     """SIZE sütunundaki değerden 20 ya da 40 ayak sınıfını tespit eder
     (örn. '20', '20DV', "20'", 'GP20' gibi farklı yazımları destekler)."""
 
@@ -4563,12 +4811,206 @@ def page_cfs():
             st.dataframe(_recon_df, use_container_width=True, hide_index=True)
 
 
+# ---------------------------------------------------------
+# YILLIK PERFORMANS (CONTAINER.xlsx)
+# ---------------------------------------------------------
+
+def page_vessel_performance():
+
+    st.subheader(t("vperf_title"))
+    st.caption(t("vperf_caption"))
+
+    if not os.path.exists(CONTAINER_HISTORY_FILE):
+        st.html(f"""
+            <div class="empty-state">
+                <div class="empty-state-icon">📈</div>
+                <div class="empty-state-title">{t('vperf_file_missing')}</div>
+            </div>
+        """)
+        return
+
+    try:
+        history_modified = os.path.getmtime(CONTAINER_HISTORY_FILE)
+        with st.spinner(t("db_loading")):
+            history_df = load_vessel_performance_history(CONTAINER_HISTORY_FILE, history_modified)
+    except Exception:
+        st.error(t("vperf_file_error"))
+        return
+
+    if history_df.empty:
+        st.error(t("vperf_file_error"))
+        return
+
+    available_years = sorted(history_df["YEAR"].unique(), reverse=True)
+
+    selected_year = st.selectbox(t("vperf_year_select"), available_years, key="vperf_year_select")
+
+    kpi = compute_vessel_kpis(history_df, selected_year)
+
+    if kpi is None:
+        st.warning(t("vperf_no_data"))
+        return
+
+    kpis_by_year = {y: compute_vessel_kpis(history_df, y) for y in available_years}
+    prev_year = selected_year - 1
+    prev_kpi = kpis_by_year.get(prev_year)
+
+    def _yoy(current, previous):
+        if previous is None or previous == 0:
+            return None
+        return round((current - previous) / previous * 100, 1)
+
+    yoy_teu = _yoy(kpi["total_teu"], prev_kpi["total_teu"]) if prev_kpi else None
+
+    vk1, vk2, vk3, vk4, vk5 = st.columns(5)
+
+    with vk1:
+        st.html(f"""
+            <div class="dash-card">
+                <div class="icon-badge icon-badge-navy">🚢</div>
+                <div class="dash-label">{t('vperf_kpi_calls')}</div>
+                <div class="dash-value">{kpi['calls']:,}</div>
+            </div>
+        """)
+
+    with vk2:
+        yoy_html = ""
+        if yoy_teu is not None:
+            arrow = "▲" if yoy_teu >= 0 else "▼"
+            color = "#1F6E4A" if yoy_teu >= 0 else "#B91C1C"
+            yoy_html = f'<div style="font-size:10px;color:{color};font-weight:800;margin-top:2px;">{arrow} {abs(yoy_teu)}% {t("vperf_yoy_title")}</div>'
+        st.html(f"""
+            <div class="dash-card">
+                <div class="icon-badge icon-badge-gold">⚓</div>
+                <div class="dash-label">{t('vperf_kpi_teu')}</div>
+                <div class="dash-value">{kpi['total_teu']:,.0f}</div>
+                {yoy_html}
+            </div>
+        """)
+
+    with vk3:
+        st.html(f"""
+            <div class="dash-card">
+                <div class="icon-badge icon-badge-green">📦</div>
+                <div class="dash-label">{t('vperf_kpi_containers')}</div>
+                <div class="dash-value">{kpi['total_containers']:,.0f}</div>
+            </div>
+        """)
+
+    with vk4:
+        st.html(f"""
+            <div class="dash-card">
+                <div class="icon-badge icon-badge-navy">📊</div>
+                <div class="dash-label">{t('vperf_kpi_avg')}</div>
+                <div class="dash-value">{kpi['avg_teu']:,.0f}</div>
+            </div>
+        """)
+
+    with vk5:
+        st.html(f"""
+            <div class="dash-card dash-teu-card">
+                <div class="icon-badge icon-badge-gold">📐</div>
+                <div class="dash-label">{t('vperf_kpi_share40')}</div>
+                <div class="dash-value">{kpi['share_40']*100:.1f}%</div>
+            </div>
+        """)
+
+    st.write("")
+
+    # -------------------------------------------------
+    # AYLIK TEU TRENDİ
+    # -------------------------------------------------
+
+    with st.expander(t("vperf_trend_title"), expanded=True):
+
+        monthly_pivot = compute_monthly_teu_pivot(history_df)
+
+        if monthly_pivot.empty:
+            st.caption(t("vperf_no_data"))
+        else:
+            lang = st.session_state.get("language", "tr")
+            display_pivot = monthly_pivot.copy()
+            display_pivot.index = [MONTH_LABELS.get(lang, MONTH_LABELS["tr"]).get(m, m) for m in display_pivot.index]
+            st.bar_chart(display_pivot, use_container_width=True, height=260)
+
+    st.write("")
+
+    # -------------------------------------------------
+    # HAT BAZLI PERFORMANS
+    # -------------------------------------------------
+
+    with st.expander(t("vperf_agent_title"), expanded=False):
+
+        st.caption(t("vperf_agent_caption"))
+
+        agent_perf = compute_agent_performance(history_df, selected_year)
+
+        if agent_perf.empty:
+            st.caption(t("vperf_no_data"))
+        else:
+            for _, row in agent_perf.iterrows():
+                line_color = LINE_COLORS.get(row["Hat"], "#A6821E")
+                pct = row["Pay"] * 100
+                st.html(f"""
+                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+                        <div style="min-width:110px;">{line_badge_html(row['Hat'])}</div>
+                        <div style="flex:1; background:var(--border); border-radius:20px; height:10px; overflow:hidden;">
+                            <div style="width:{pct}%; background:{line_color}; height:100%;"></div>
+                        </div>
+                        <div style="min-width:150px; text-align:right; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--navy); font-weight:700;">
+                            {row['Sefer']:.0f} {t('vperf_kpi_calls').lower()} · {row['TEU']:,.0f} TEU · {pct:.1f}%
+                        </div>
+                    </div>
+                """)
+
+    st.write("")
+
+    # -------------------------------------------------
+    # KONTEYNER KATEGORİ KIRILIMI
+    # -------------------------------------------------
+
+    with st.expander(t("vperf_breakdown_title"), expanded=False):
+
+        st.caption(t("vperf_breakdown_caption"))
+
+        breakdown_df = pd.DataFrame({
+            "20'": [kpi["discharge_20"], kpi["fcl_20"], kpi["empty_20"]],
+            "40'": [kpi["discharge_40"], kpi["fcl_40"], kpi["empty_40"]],
+        }, index=["Tahliye" if st.session_state.get("language") == "tr" else "Discharge",
+                   "FCL" if st.session_state.get("language") == "tr" else "FCL Loading",
+                   "Boş" if st.session_state.get("language") == "tr" else "Empty Loading"])
+
+        st.bar_chart(breakdown_df, use_container_width=True, height=220)
+        st.dataframe(breakdown_df, use_container_width=True)
+
+    st.write("")
+
+    # -------------------------------------------------
+    # EXCEL RAPORU
+    # -------------------------------------------------
+
+    with st.container(border=True):
+
+        st.markdown(f"**{t('vperf_export_title')}**")
+        st.caption(t("vperf_export_caption"))
+
+        vperf_excel_bytes = build_vessel_history_excel(history_df, kpis_by_year, monthly_pivot)
+
+        st.download_button(
+            t("vperf_export_button"),
+            data=vperf_excel_bytes,
+            file_name=f"gemi_performans_raporu_{datetime.now().strftime('%Y%m%d')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
+        )
+
+
 # =========================================================
 # SEKMELER — HER BAŞLIK KENDİ SEKMESİ
 # =========================================================
 
-tab_dashboard, tab_single, tab_batch, tab_gate, tab_load, tab_cfs = st.tabs(
-    [t("nav_dashboard"), t("tab_single"), t("tab_batch"), t("tab_gate"), t("tab_load"), t("tab_cfs")]
+tab_dashboard, tab_single, tab_batch, tab_gate, tab_load, tab_cfs, tab_vperf = st.tabs(
+    [t("nav_dashboard"), t("tab_single"), t("tab_batch"), t("tab_gate"), t("tab_load"), t("tab_cfs"), t("tab_vessel_perf")]
 )
 
 with tab_dashboard:
@@ -4588,6 +5030,9 @@ with tab_load:
 
 with tab_cfs:
     page_cfs()
+
+with tab_vperf:
+    page_vessel_performance()
 
 
 # =========================================================
