@@ -187,6 +187,13 @@ TRANSLATIONS = {
         "vperf_export_caption": "Tüm gemi sefer geçmişini, yıllık KPI özetini ve aylık trendi tek Excel dosyasında indir.",
         "vperf_export_button": "📥 Excel Olarak İndir",
         "vperf_yoy_title": "Yıllık Değişim",
+        "vperf_compare_title": "📊 3 Yıllık Karşılaştırmalı Özet",
+        "vperf_compare_caption": "Gemi seferi, TEU, konteyner hacmi ve doluluk oranlarının yıldan yıla karşılaştırması.",
+        "vperf_metric_col": "Metrik",
+        "vperf_month_col": "Ay",
+        "vperf_monthly_table_title": "Aylık TEU Karşılaştırma Tablosu",
+        "vperf_agent_compare_title": "Hat Bazlı Çok Yıllı Karşılaştırma",
+        "vperf_agent_detail_title": "Seçilen Yıl İçin Detaylı Hat Dağılımı",
 
         "hero_brand": "LİMAN OPERASYONLARI",
         "hero_title": "Konteyner Takip ve Doğrulama Sistemi",
@@ -470,6 +477,13 @@ TRANSLATIONS = {
         "vperf_export_caption": "Download the full vessel call history, annual KPI summary, and monthly trend in one Excel file.",
         "vperf_export_button": "📥 Download as Excel",
         "vperf_yoy_title": "Year-over-Year Change",
+        "vperf_compare_title": "📊 3-Year Comparative Summary",
+        "vperf_compare_caption": "Year-over-year comparison of vessel calls, TEU, container volume, and utilization rates.",
+        "vperf_metric_col": "Metric",
+        "vperf_month_col": "Month",
+        "vperf_monthly_table_title": "Monthly TEU Comparison Table",
+        "vperf_agent_compare_title": "Multi-Year Line Comparison",
+        "vperf_agent_detail_title": "Detailed Line Breakdown for Selected Year",
 
         "hero_brand": "PORT OPERATIONS",
         "hero_title": "Container Tracking & Verification System",
@@ -826,6 +840,78 @@ header { visibility: hidden; }
 .icon-badge-green { background: rgba(21,115,71,0.10); color: var(--verified); }
 .icon-badge-grey { background: rgba(107,114,128,0.10); color: var(--ink-soft); }
 .icon-badge-alert { background: rgba(185,28,28,0.09); color: var(--alert); }
+
+
+/* =====================================================
+   YILLIK KARŞILAŞTIRMA TABLOSU
+   ===================================================== */
+
+.compare-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(15,42,68,0.04);
+}
+
+table.compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Inter', sans-serif;
+    font-size: 12.5px;
+    background: var(--surface);
+}
+
+table.compare-table thead th {
+    background: var(--navy);
+    color: #FFFFFF;
+    font-weight: 800;
+    font-size: 10.5px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 11px 14px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+table.compare-table thead th:first-child {
+    text-align: left;
+}
+
+table.compare-table tbody td {
+    padding: 10px 14px;
+    text-align: right;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    color: var(--navy);
+    white-space: nowrap;
+    border-top: 1px solid var(--border);
+}
+
+table.compare-table tbody td:first-child {
+    text-align: left;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+table.compare-table tbody tr:nth-child(even) {
+    background: rgba(15,42,68,0.02);
+}
+
+table.compare-table tbody tr:hover {
+    background: rgba(184,134,11,0.05);
+}
+
+.compare-table tbody tr.total-row td {
+    border-top: 2px solid var(--navy);
+    font-weight: 800;
+    color: var(--navy);
+    background: rgba(15,42,68,0.03);
+}
+
+.delta-up { color: var(--verified); font-weight: 800; }
+.delta-down { color: var(--alert); font-weight: 800; }
+.delta-flat { color: var(--ink-soft); font-weight: 700; }
 
 
 /* =====================================================
@@ -2353,6 +2439,152 @@ def compute_agent_performance(history_df, year):
     grouped.columns = ["Hat", "Sefer", "TEU", "Konteyner", "Pay"]
 
     return grouped
+
+
+def _delta_cell_html(current, previous, is_percent=False):
+    """İki değer arasındaki değişimi renkli ok işaretiyle HTML hücresi olarak üretir."""
+
+    if previous is None or current is None or pd.isna(previous) or pd.isna(current) or previous == 0:
+        return '<span class="delta-flat">—</span>'
+
+    delta_pct = (current - previous) / previous * 100
+
+    if abs(delta_pct) < 0.05:
+        return '<span class="delta-flat">≈0%</span>'
+
+    arrow = "▲" if delta_pct > 0 else "▼"
+    css_class = "delta-up" if delta_pct > 0 else "delta-down"
+    return f'<span class="{css_class}">{arrow} {abs(delta_pct):.1f}%</span>'
+
+
+def build_yearly_comparison_table_html(kpis_by_year, years, lang="tr"):
+    """3 (ya da daha fazla) yılı yan yana karşılaştıran, Δ% sütunlu bir HTML tablo üretir."""
+
+    years = sorted(years)
+
+    metrics = [
+        (t("vperf_kpi_calls"), "calls", "{:,.0f}"),
+        (t("vperf_kpi_teu"), "total_teu", "{:,.0f}"),
+        (t("vperf_kpi_containers"), "total_containers", "{:,.0f}"),
+        (t("vperf_kpi_avg"), "avg_teu", "{:,.0f}"),
+        (t("vperf_kpi_share40"), "share_40", "{:.1%}"),
+    ]
+
+    header_cells = f'<th>{safe(t("vperf_metric_col"))}</th>'
+    for y in years:
+        header_cells += f'<th>{y}</th>'
+    for i in range(1, len(years)):
+        header_cells += f'<th>Δ {years[i]}/{years[i-1]}</th>'
+
+    rows_html = ""
+    for label, key, fmt in metrics:
+        row = f'<tr><td>{safe(label)}</td>'
+        values = []
+        for y in years:
+            kpi = kpis_by_year.get(y)
+            val = kpi[key] if kpi else None
+            values.append(val)
+            row += f'<td>{fmt.format(val) if val is not None else "—"}</td>'
+        for i in range(1, len(years)):
+            row += f'<td>{_delta_cell_html(values[i], values[i-1])}</td>'
+        row += '</tr>'
+        rows_html += row
+
+    return f"""
+    <div class="compare-table-wrap">
+        <table class="compare-table">
+            <thead><tr>{header_cells}</tr></thead>
+            <tbody>{rows_html}</tbody>
+        </table>
+    </div>
+    """
+
+
+def build_monthly_comparison_table_html(monthly_pivot, lang="tr"):
+    """Ay bazında yılları ve Δ% değişimlerini karşılaştıran bir HTML tablo üretir."""
+
+    if monthly_pivot.empty:
+        return ""
+
+    years = list(monthly_pivot.columns)
+    month_labels = MONTH_LABELS.get(lang, MONTH_LABELS["tr"])
+
+    header_cells = f'<th>{safe(t("vperf_month_col"))}</th>'
+    for y in years:
+        header_cells += f'<th>{y}</th>'
+    for i in range(1, len(years)):
+        header_cells += f'<th>Δ {years[i]}/{years[i-1]}</th>'
+
+    rows_html = ""
+    for month in monthly_pivot.index:
+        label = month_labels.get(month, month)
+        row = f'<tr><td>{safe(label)}</td>'
+        values = [monthly_pivot.loc[month, y] for y in years]
+        for v in values:
+            row += f'<td>{v:,.0f}</td>' if pd.notna(v) else '<td>—</td>'
+        for i in range(1, len(years)):
+            row += f'<td>{_delta_cell_html(values[i], values[i-1])}</td>'
+        row += '</tr>'
+        rows_html += row
+
+    totals = [monthly_pivot[y].sum() for y in years]
+    total_row = f'<tr class="total-row"><td>{safe(t("batch_total"))}</td>'
+    for v in totals:
+        total_row += f'<td>{v:,.0f}</td>'
+    for i in range(1, len(years)):
+        total_row += f'<td>{_delta_cell_html(totals[i], totals[i-1])}</td>'
+    total_row += '</tr>'
+    rows_html += total_row
+
+    return f"""
+    <div class="compare-table-wrap">
+        <table class="compare-table">
+            <thead><tr>{header_cells}</tr></thead>
+            <tbody>{rows_html}</tbody>
+        </table>
+    </div>
+    """
+
+
+def build_agent_comparison_table_html(history_df, years):
+    """Hat bazında, yıllar arası TEU karşılaştırmasını Δ% ile birlikte HTML tablo olarak üretir."""
+
+    years = sorted(years)
+
+    agent_year_teu = {}
+    for y in years:
+        sub = history_df[history_df["YEAR"] == y]
+        agent_year_teu[y] = sub.groupby("AGENT")["TOTAL_TEU"].sum()
+
+    all_agents = sorted(set().union(*[set(s.index) for s in agent_year_teu.values()]))
+
+    header_cells = f'<th>{safe(t("line_column_label"))}</th>'
+    for y in years:
+        header_cells += f'<th>TEU {y}</th>'
+    for i in range(1, len(years)):
+        header_cells += f'<th>Δ {years[i]}/{years[i-1]}</th>'
+
+    rows_html = ""
+    for agent in all_agents:
+        row = f'<tr><td>{line_badge_html(agent)}</td>'
+        values = []
+        for y in years:
+            v = agent_year_teu[y].get(agent, 0)
+            values.append(v)
+            row += f'<td>{v:,.0f}</td>'
+        for i in range(1, len(years)):
+            row += f'<td>{_delta_cell_html(values[i], values[i-1])}</td>'
+        row += '</tr>'
+        rows_html += row
+
+    return f"""
+    <div class="compare-table-wrap">
+        <table class="compare-table">
+            <thead><tr>{header_cells}</tr></thead>
+            <tbody>{rows_html}</tbody>
+        </table>
+    </div>
+    """
 
 
 def build_vessel_history_excel(history_df, kpis_by_year, monthly_pivot):
@@ -4841,18 +5073,14 @@ def page_vessel_performance():
         st.error(t("vperf_file_error"))
         return
 
-    available_years = sorted(history_df["YEAR"].unique(), reverse=True)
-
-    selected_year = st.selectbox(t("vperf_year_select"), available_years, key="vperf_year_select")
-
-    kpi = compute_vessel_kpis(history_df, selected_year)
-
-    if kpi is None:
-        st.warning(t("vperf_no_data"))
-        return
+    available_years = sorted(history_df["YEAR"].unique())
+    lang = st.session_state.get("language", "tr")
 
     kpis_by_year = {y: compute_vessel_kpis(history_df, y) for y in available_years}
-    prev_year = selected_year - 1
+
+    latest_year = max(available_years)
+    latest_kpi = kpis_by_year[latest_year]
+    prev_year = latest_year - 1
     prev_kpi = kpis_by_year.get(prev_year)
 
     def _yoy(current, previous):
@@ -4860,7 +5088,11 @@ def page_vessel_performance():
             return None
         return round((current - previous) / previous * 100, 1)
 
-    yoy_teu = _yoy(kpi["total_teu"], prev_kpi["total_teu"]) if prev_kpi else None
+    yoy_teu = _yoy(latest_kpi["total_teu"], prev_kpi["total_teu"]) if prev_kpi else None
+
+    # -------------------------------------------------
+    # ÖNE ÇIKAN YIL — KPI KARTLARI (en güncel yıl)
+    # -------------------------------------------------
 
     vk1, vk2, vk3, vk4, vk5 = st.columns(5)
 
@@ -4868,8 +5100,8 @@ def page_vessel_performance():
         st.html(f"""
             <div class="dash-card">
                 <div class="icon-badge icon-badge-navy">🚢</div>
-                <div class="dash-label">{t('vperf_kpi_calls')}</div>
-                <div class="dash-value">{kpi['calls']:,}</div>
+                <div class="dash-label">{latest_year} · {t('vperf_kpi_calls')}</div>
+                <div class="dash-value">{latest_kpi['calls']:,}</div>
             </div>
         """)
 
@@ -4882,8 +5114,8 @@ def page_vessel_performance():
         st.html(f"""
             <div class="dash-card">
                 <div class="icon-badge icon-badge-gold">⚓</div>
-                <div class="dash-label">{t('vperf_kpi_teu')}</div>
-                <div class="dash-value">{kpi['total_teu']:,.0f}</div>
+                <div class="dash-label">{latest_year} · {t('vperf_kpi_teu')}</div>
+                <div class="dash-value">{latest_kpi['total_teu']:,.0f}</div>
                 {yoy_html}
             </div>
         """)
@@ -4892,8 +5124,8 @@ def page_vessel_performance():
         st.html(f"""
             <div class="dash-card">
                 <div class="icon-badge icon-badge-green">📦</div>
-                <div class="dash-label">{t('vperf_kpi_containers')}</div>
-                <div class="dash-value">{kpi['total_containers']:,.0f}</div>
+                <div class="dash-label">{latest_year} · {t('vperf_kpi_containers')}</div>
+                <div class="dash-value">{latest_kpi['total_containers']:,.0f}</div>
             </div>
         """)
 
@@ -4901,8 +5133,8 @@ def page_vessel_performance():
         st.html(f"""
             <div class="dash-card">
                 <div class="icon-badge icon-badge-navy">📊</div>
-                <div class="dash-label">{t('vperf_kpi_avg')}</div>
-                <div class="dash-value">{kpi['avg_teu']:,.0f}</div>
+                <div class="dash-label">{latest_year} · {t('vperf_kpi_avg')}</div>
+                <div class="dash-value">{latest_kpi['avg_teu']:,.0f}</div>
             </div>
         """)
 
@@ -4910,15 +5142,26 @@ def page_vessel_performance():
         st.html(f"""
             <div class="dash-card dash-teu-card">
                 <div class="icon-badge icon-badge-gold">📐</div>
-                <div class="dash-label">{t('vperf_kpi_share40')}</div>
-                <div class="dash-value">{kpi['share_40']*100:.1f}%</div>
+                <div class="dash-label">{latest_year} · {t('vperf_kpi_share40')}</div>
+                <div class="dash-value">{latest_kpi['share_40']*100:.1f}%</div>
             </div>
         """)
 
     st.write("")
 
     # -------------------------------------------------
-    # AYLIK TEU TRENDİ
+    # 3 YILLIK KARŞILAŞTIRMALI ÖZET (her zaman tüm yıllar)
+    # -------------------------------------------------
+
+    st.markdown(f"**{t('vperf_compare_title')}**")
+    st.caption(t("vperf_compare_caption"))
+
+    st.html(build_yearly_comparison_table_html(kpis_by_year, available_years, lang))
+
+    st.write("")
+
+    # -------------------------------------------------
+    # AYLIK TEU TRENDİ — grafik + karşılaştırma tablosu
     # -------------------------------------------------
 
     with st.expander(t("vperf_trend_title"), expanded=True):
@@ -4928,22 +5171,34 @@ def page_vessel_performance():
         if monthly_pivot.empty:
             st.caption(t("vperf_no_data"))
         else:
-            lang = st.session_state.get("language", "tr")
             display_pivot = monthly_pivot.copy()
             display_pivot.index = [MONTH_LABELS.get(lang, MONTH_LABELS["tr"]).get(m, m) for m in display_pivot.index]
-            st.bar_chart(display_pivot, use_container_width=True, height=260)
+            st.bar_chart(display_pivot, use_container_width=True, height=280)
+
+            st.write("")
+            st.markdown(f"**{t('vperf_monthly_table_title')}**")
+            st.html(build_monthly_comparison_table_html(monthly_pivot, lang))
 
     st.write("")
 
     # -------------------------------------------------
-    # HAT BAZLI PERFORMANS
+    # HAT BAZLI PERFORMANS — çok yıllı karşılaştırma + seçili yıl detayı
     # -------------------------------------------------
 
     with st.expander(t("vperf_agent_title"), expanded=False):
 
         st.caption(t("vperf_agent_caption"))
 
-        agent_perf = compute_agent_performance(history_df, selected_year)
+        st.markdown(f"**{t('vperf_agent_compare_title')}**")
+        st.html(build_agent_comparison_table_html(history_df, available_years))
+
+        st.write("")
+        st.markdown(f"**{t('vperf_agent_detail_title')}**")
+
+        detail_year = st.selectbox(
+            t("vperf_year_select"), sorted(available_years, reverse=True), key="vperf_agent_detail_year"
+        )
+        agent_perf = compute_agent_performance(history_df, detail_year)
 
         if agent_perf.empty:
             st.caption(t("vperf_no_data"))
@@ -4966,22 +5221,30 @@ def page_vessel_performance():
     st.write("")
 
     # -------------------------------------------------
-    # KONTEYNER KATEGORİ KIRILIMI
+    # KONTEYNER KATEGORİ KIRILIMI (seçili yıl)
     # -------------------------------------------------
 
     with st.expander(t("vperf_breakdown_title"), expanded=False):
 
         st.caption(t("vperf_breakdown_caption"))
 
-        breakdown_df = pd.DataFrame({
-            "20'": [kpi["discharge_20"], kpi["fcl_20"], kpi["empty_20"]],
-            "40'": [kpi["discharge_40"], kpi["fcl_40"], kpi["empty_40"]],
-        }, index=["Tahliye" if st.session_state.get("language") == "tr" else "Discharge",
-                   "FCL" if st.session_state.get("language") == "tr" else "FCL Loading",
-                   "Boş" if st.session_state.get("language") == "tr" else "Empty Loading"])
+        breakdown_year = st.selectbox(
+            t("vperf_year_select"), sorted(available_years, reverse=True), key="vperf_breakdown_year"
+        )
+        breakdown_kpi = kpis_by_year.get(breakdown_year)
 
-        st.bar_chart(breakdown_df, use_container_width=True, height=220)
-        st.dataframe(breakdown_df, use_container_width=True)
+        if breakdown_kpi is None:
+            st.caption(t("vperf_no_data"))
+        else:
+            breakdown_df = pd.DataFrame({
+                "20'": [breakdown_kpi["discharge_20"], breakdown_kpi["fcl_20"], breakdown_kpi["empty_20"]],
+                "40'": [breakdown_kpi["discharge_40"], breakdown_kpi["fcl_40"], breakdown_kpi["empty_40"]],
+            }, index=["Tahliye" if lang == "tr" else "Discharge",
+                       "FCL" if lang == "tr" else "FCL Loading",
+                       "Boş" if lang == "tr" else "Empty Loading"])
+
+            st.bar_chart(breakdown_df, use_container_width=True, height=220)
+            st.dataframe(breakdown_df, use_container_width=True)
 
     st.write("")
 
