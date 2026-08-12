@@ -711,33 +711,7 @@ BASE_CSS = """
 
 #MainMenu { visibility: hidden; }
 footer { visibility: hidden; }
-.stDeployButton { display: none !important; }
-
-/* Üst navigasyon çubuğunu (Dashboard | Tekli Arama | ...) markaya uygun,
-   dikkat çekici bir bant haline getir. Streamlit bu navigasyonu <header>
-   içine render ediyor; iç yapının test-id'leri belgelenmediği için tüm
-   konteyneri renklendirip, içindeki metin/simgeleri beyaza çeviriyoruz. */
-header {
-    background: linear-gradient(90deg, #0A1E33, #0F2A44 55%, #123A5C) !important;
-    border-bottom: 3px solid #B8860B !important;
-    box-shadow: 0 3px 14px rgba(15,42,68,0.25) !important;
-    min-height: 3.4rem !important;
-}
-
-header p, header span, header a, header button, header div {
-    color: #F4F6F8 !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.3px;
-}
-
-header button[aria-selected="true"], header a[aria-selected="true"] {
-    color: #D4A72C !important;
-    border-bottom: 2px solid #D4A72C !important;
-}
-
-header svg {
-    fill: #F4F6F8 !important;
-}
+header { visibility: hidden; }
 
 
 /* =====================================================
@@ -4590,21 +4564,30 @@ def page_cfs():
 
 
 # =========================================================
-# ÜST NAVİGASYON — HER BAŞLIK KENDİ SAYFASI
+# SEKMELER — HER BAŞLIK KENDİ SEKMESİ
 # =========================================================
 
-pg = st.navigation(
-    [
-        st.Page(page_dashboard, title=t("nav_dashboard"), default=True),
-        st.Page(page_single, title=t("tab_single")),
-        st.Page(page_batch, title=t("tab_batch")),
-        st.Page(page_gate, title=t("tab_gate")),
-        st.Page(page_load, title=t("tab_load")),
-        st.Page(page_cfs, title=t("tab_cfs")),
-    ],
-    position="top"
+tab_dashboard, tab_single, tab_batch, tab_gate, tab_load, tab_cfs = st.tabs(
+    [t("nav_dashboard"), t("tab_single"), t("tab_batch"), t("tab_gate"), t("tab_load"), t("tab_cfs")]
 )
-pg.run()
+
+with tab_dashboard:
+    page_dashboard()
+
+with tab_single:
+    page_single()
+
+with tab_batch:
+    page_batch()
+
+with tab_gate:
+    page_gate()
+
+with tab_load:
+    page_load()
+
+with tab_cfs:
+    page_cfs()
 
 
 # =========================================================
