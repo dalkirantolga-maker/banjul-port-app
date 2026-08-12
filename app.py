@@ -164,6 +164,7 @@ TRANSLATIONS = {
         "gauge_filled_row": "Dolu Konteyner",
         "gauge_empty_row": "Boş Konteyner",
         "gauge_teu_row": "Toplam TEU",
+        "nav_dashboard": "📊 Dashboard",
 
         "hero_brand": "LİMAN OPERASYONLARI",
         "hero_title": "Konteyner Takip ve Doğrulama Sistemi",
@@ -425,6 +426,7 @@ TRANSLATIONS = {
         "gauge_filled_row": "Full Containers",
         "gauge_empty_row": "Empty Containers",
         "gauge_teu_row": "Total TEU",
+        "nav_dashboard": "📊 Dashboard",
 
         "hero_brand": "PORT OPERATIONS",
         "hero_title": "Container Tracking & Verification System",
@@ -2869,460 +2871,461 @@ except Exception:
 
 update_time = datetime.fromtimestamp(modified_time).strftime("%d.%m.%Y • %H:%M")
 
-_db_issues = validate_database_quality(df)
-if _db_issues:
-    _issue_parts = []
-    if "duplicate" in _db_issues:
-        _issue_parts.append(f"{_db_issues['duplicate']} {t('dq_duplicate')}")
-    if "missing_size" in _db_issues:
-        _issue_parts.append(f"{_db_issues['missing_size']} {t('dq_missing_size')}")
-    if "missing_status" in _db_issues:
-        _issue_parts.append(f"{_db_issues['missing_status']} {t('dq_missing_status')}")
-    if "missing_agent" in _db_issues:
-        _issue_parts.append(f"{_db_issues['missing_agent']} {t('dq_missing_agent')}")
+def page_dashboard():
+    _db_issues = validate_database_quality(df)
+    if _db_issues:
+        _issue_parts = []
+        if "duplicate" in _db_issues:
+            _issue_parts.append(f"{_db_issues['duplicate']} {t('dq_duplicate')}")
+        if "missing_size" in _db_issues:
+            _issue_parts.append(f"{_db_issues['missing_size']} {t('dq_missing_size')}")
+        if "missing_status" in _db_issues:
+            _issue_parts.append(f"{_db_issues['missing_status']} {t('dq_missing_status')}")
+        if "missing_agent" in _db_issues:
+            _issue_parts.append(f"{_db_issues['missing_agent']} {t('dq_missing_agent')}")
 
-    with st.expander(f"⚠️ {t('dq_warning_title')}", expanded=False):
-        for part in _issue_parts:
-            st.caption(f"• {part}")
-
-
-# =========================================================
-# DURUM KARTLARI
-# =========================================================
-
-stat1, stat2 = st.columns(2)
-
-with stat1:
-    st.html(f"""
-        <div class="stat-card" role="status" aria-label="{t('stat_current_record')}">
-            <div class="stat-accent-blue"></div>
-            <div class="stat-icon">▣</div>
-            <div class="stat-label">{t('stat_current_record')}</div>
-            <div class="stat-value">{len(df):,} {t('stat_container_unit')}</div>
-        </div>
-    """)
-
-with stat2:
-    st.html(f"""
-        <div class="stat-card" role="status" aria-label="{t('stat_last_update')}">
-            <div class="stat-accent-green"></div>
-            <div class="stat-icon">◷</div>
-            <div class="stat-label">{t('stat_last_update')}</div>
-            <div class="stat-value">{update_time}</div>
-        </div>
-    """)
-
-st.write("")
+        with st.expander(f"⚠️ {t('dq_warning_title')}", expanded=False):
+            for part in _issue_parts:
+                st.caption(f"• {part}")
 
 
-# =========================================================
-# ANA SAYFA DASHBOARD — Liman Envanter Panosu
-# =========================================================
+    # =========================================================
+    # DURUM KARTLARI
+    # =========================================================
 
-_movements_for_dashboard = load_movements()
-_moved_out_for_dashboard = get_moved_out_numbers(_movements_for_dashboard)
-_remaining_for_dashboard = df[~df["_SEARCH"].isin(_moved_out_for_dashboard)]
-_dash = compute_yard_dashboard(_remaining_for_dashboard)
+    stat1, stat2 = st.columns(2)
 
-# -------------------------------------------------
-# GÜNLÜK VARDİYA ÖZETİ
-# -------------------------------------------------
+    with stat1:
+        st.html(f"""
+            <div class="stat-card" role="status" aria-label="{t('stat_current_record')}">
+                <div class="stat-accent-blue"></div>
+                <div class="stat-icon">▣</div>
+                <div class="stat-label">{t('stat_current_record')}</div>
+                <div class="stat-value">{len(df):,} {t('stat_container_unit')}</div>
+            </div>
+        """)
 
-_cfs_for_dashboard = load_cfs_records()
-_today_str_dashboard = datetime.now().strftime("%d.%m.%Y")
+    with stat2:
+        st.html(f"""
+            <div class="stat-card" role="status" aria-label="{t('stat_last_update')}">
+                <div class="stat-accent-green"></div>
+                <div class="stat-icon">◷</div>
+                <div class="stat-label">{t('stat_last_update')}</div>
+                <div class="stat-value">{update_time}</div>
+            </div>
+        """)
 
-_gate_today_summary = (
-    _movements_for_dashboard[
-        (_movements_for_dashboard["HAREKET"] == "Kapı Çıkışı")
-        & (_movements_for_dashboard["TARIH"].str.startswith(_today_str_dashboard))
-    ] if not _movements_for_dashboard.empty else _movements_for_dashboard
-)
-_load_today_summary = (
-    _movements_for_dashboard[
-        (_movements_for_dashboard["HAREKET"] == "Gemiye Yükleme")
-        & (_movements_for_dashboard["TARIH"].str.startswith(_today_str_dashboard))
-    ] if not _movements_for_dashboard.empty else _movements_for_dashboard
-)
-_cfs_today_summary = (
-    _cfs_for_dashboard[_cfs_for_dashboard["BOSALTIM_TARIHI"] == _today_str_dashboard]
-    if not _cfs_for_dashboard.empty else _cfs_for_dashboard
-)
+    st.write("")
 
-_shift_total = len(_gate_today_summary) + len(_load_today_summary) + len(_cfs_today_summary)
 
-with st.expander(f"{t('shift_summary_title')} — {t('shift_summary_total')}: {_shift_total}", expanded=False):
-    st.caption(t("shift_summary_caption"))
-    _summary_text = build_shift_summary_text(
-        _gate_today_summary, _load_today_summary, _cfs_today_summary, _today_str_dashboard
+    # =========================================================
+    # ANA SAYFA DASHBOARD — Liman Envanter Panosu
+    # =========================================================
+
+    _movements_for_dashboard = load_movements()
+    _moved_out_for_dashboard = get_moved_out_numbers(_movements_for_dashboard)
+    _remaining_for_dashboard = df[~df["_SEARCH"].isin(_moved_out_for_dashboard)]
+    _dash = compute_yard_dashboard(_remaining_for_dashboard)
+
+    # -------------------------------------------------
+    # GÜNLÜK VARDİYA ÖZETİ
+    # -------------------------------------------------
+
+    _cfs_for_dashboard = load_cfs_records()
+    _today_str_dashboard = datetime.now().strftime("%d.%m.%Y")
+
+    _gate_today_summary = (
+        _movements_for_dashboard[
+            (_movements_for_dashboard["HAREKET"] == "Kapı Çıkışı")
+            & (_movements_for_dashboard["TARIH"].str.startswith(_today_str_dashboard))
+        ] if not _movements_for_dashboard.empty else _movements_for_dashboard
     )
-    st.code(_summary_text, language=None)
+    _load_today_summary = (
+        _movements_for_dashboard[
+            (_movements_for_dashboard["HAREKET"] == "Gemiye Yükleme")
+            & (_movements_for_dashboard["TARIH"].str.startswith(_today_str_dashboard))
+        ] if not _movements_for_dashboard.empty else _movements_for_dashboard
+    )
+    _cfs_today_summary = (
+        _cfs_for_dashboard[_cfs_for_dashboard["BOSALTIM_TARIHI"] == _today_str_dashboard]
+        if not _cfs_for_dashboard.empty else _cfs_for_dashboard
+    )
 
-st.write("")
+    _shift_total = len(_gate_today_summary) + len(_load_today_summary) + len(_cfs_today_summary)
 
-st.html(f"""
-<div class="dashboard-header">
-    <div class="dashboard-title">{t('dashboard_title')}</div>
-    <div class="dashboard-subtitle">{t('dashboard_subtitle')}</div>
-</div>
-""")
-
-d1, d2, d3, d4, d5 = st.columns(5)
-
-with d1:
-    st.html(f"""
-        <div class="dash-card">
-            <div class="dash-card-accent" style="background:{LINE_COLORS.get('OBT', '#1F6E4A')};"></div>
-            <div class="icon-badge icon-badge-green">📦</div>
-            <div class="dash-label">{t('dash_full_20')}</div>
-            <div class="dash-value">{_dash['dolu_20']:,}</div>
-        </div>
-    """)
-
-with d2:
-    st.html(f"""
-        <div class="dash-card">
-            <div class="dash-card-accent" style="background:#9CA8B4;"></div>
-            <div class="icon-badge icon-badge-grey">📭</div>
-            <div class="dash-label">{t('dash_empty_20')}</div>
-            <div class="dash-value">{_dash['bos_20']:,}</div>
-        </div>
-    """)
-
-with d3:
-    st.html(f"""
-        <div class="dash-card">
-            <div class="dash-card-accent" style="background:var(--navy);"></div>
-            <div class="icon-badge icon-badge-navy">📦</div>
-            <div class="dash-label">{t('dash_full_40')}</div>
-            <div class="dash-value">{_dash['dolu_40']:,}</div>
-        </div>
-    """)
-
-with d4:
-    st.html(f"""
-        <div class="dash-card">
-            <div class="dash-card-accent" style="background:#C7CFD8;"></div>
-            <div class="icon-badge icon-badge-grey">📭</div>
-            <div class="dash-label">{t('dash_empty_40')}</div>
-            <div class="dash-value">{_dash['bos_40']:,}</div>
-        </div>
-    """)
-
-with d5:
-    st.html(f"""
-        <div class="dash-card dash-teu-card">
-            <div class="icon-badge icon-badge-gold">⚓</div>
-            <div class="dash-label">{t('dash_total_teu')}</div>
-            <div class="dash-value">{_dash['total_teu']:,.1f}</div>
-        </div>
-    """)
-
-st.write("")
-
-# -------------------------------------------------
-# DOLULUK GÖSTERGESİ (RADIAL GAUGE)
-# -------------------------------------------------
-
-_classified_total = _dash['dolu_20'] + _dash['bos_20'] + _dash['dolu_40'] + _dash['bos_40']
-_filled_total = _dash['dolu_20'] + _dash['dolu_40']
-_empty_total = _dash['bos_20'] + _dash['bos_40']
-_occupancy_percent = round((_filled_total / _classified_total) * 100, 1) if _classified_total > 0 else 0
-
-_gauge_svg = build_occupancy_gauge_svg(_occupancy_percent)
-
-st.html(f"""
-    <div class="gauge-card">
-        <div class="gauge-svg-wrap">
-            {_gauge_svg}
-            <div class="gauge-percent">
-                {_occupancy_percent:.0f}%
-                <div class="gauge-percent-label">{t('gauge_full_label')}</div>
-            </div>
-        </div>
-        <div class="gauge-legend">
-            <div class="gauge-title">{t('gauge_title')}</div>
-            <div class="gauge-row">
-                <span>📦 {t('gauge_filled_row')}</span>
-                <span class="gauge-row-value">{_filled_total:,}</span>
-            </div>
-            <div class="gauge-row">
-                <span>📭 {t('gauge_empty_row')}</span>
-                <span class="gauge-row-value">{_empty_total:,}</span>
-            </div>
-            <div class="gauge-row">
-                <span>⚓ {t('gauge_teu_row')}</span>
-                <span class="gauge-row-value">{_dash['total_teu']:,.1f}</span>
-            </div>
-        </div>
-    </div>
-""")
-
-st.write("")
-
-# Kompozisyon çubuğu (oransal görsel özet)
-_dash_total = max(_dash['total_count'], 1)
-_seg_dolu20 = _dash['dolu_20'] / _dash_total * 100
-_seg_bos20 = _dash['bos_20'] / _dash_total * 100
-_seg_dolu40 = _dash['dolu_40'] / _dash_total * 100
-_seg_bos40 = _dash['bos_40'] / _dash_total * 100
-_seg_other = _dash['other_count'] / _dash_total * 100
-
-st.html(f"""
-    <div class="composition-bar">
-        <div class="composition-segment" style="width:{_seg_dolu20}%; background:#1F6E4A;"></div>
-        <div class="composition-segment" style="width:{_seg_bos20}%; background:#9CA8B4;"></div>
-        <div class="composition-segment" style="width:{_seg_dolu40}%; background:#0F2A44;"></div>
-        <div class="composition-segment" style="width:{_seg_bos40}%; background:#C7CFD8;"></div>
-        <div class="composition-segment" style="width:{_seg_other}%; background:#D4A72C;"></div>
-    </div>
-    <div class="composition-legend">
-        <div class="legend-item"><span class="legend-dot" style="background:#1F6E4A;"></span> {t('dash_full_20')}</div>
-        <div class="legend-item"><span class="legend-dot" style="background:#9CA8B4;"></span> {t('dash_empty_20')}</div>
-        <div class="legend-item"><span class="legend-dot" style="background:#0F2A44;"></span> {t('dash_full_40')}</div>
-        <div class="legend-item"><span class="legend-dot" style="background:#C7CFD8;"></span> {t('dash_empty_40')}</div>
-        <div class="legend-item"><span class="legend-dot" style="background:#D4A72C;"></span> {t('legend_other')}</div>
-    </div>
-""")
-
-if _dash['other_count'] > 0:
-    st.caption(f"ℹ {_dash['other_count']} {t('dash_other_note')}")
-
-st.write("")
-
-# -------------------------------------------------
-# GÜNLÜK HAREKET TRENDİ
-# -------------------------------------------------
-
-st.markdown(f"**{t('trend_title')}**")
-
-trend_range_options = {7: t("trend_range_7"), 14: t("trend_range_14"), 30: t("trend_range_30")}
-
-trend_days = st.radio(
-    t("trend_title"),
-    options=list(trend_range_options.keys()),
-    format_func=lambda x: trend_range_options[x],
-    index=1,
-    horizontal=True,
-    key="trend_range_select",
-    label_visibility="collapsed"
-)
-
-_trend_df = compute_daily_trend(_movements_for_dashboard, days=trend_days)
-
-if _trend_df.to_numpy().sum() == 0:
-    st.html(f"""
-        <div class="empty-state">
-            <div class="empty-state-icon">📈</div>
-            <div class="empty-state-title">{t('trend_empty')}</div>
-            <div class="empty-state-sub">{t('trend_empty_sub')}</div>
-        </div>
-    """)
-else:
-    st.bar_chart(_trend_df, use_container_width=True, height=220)
-
-st.write("")
-
-# -------------------------------------------------
-# HAT BAZLI ENVANTER DETAYI
-# -------------------------------------------------
-
-with st.expander(t("line_breakdown_title"), expanded=False):
-
-    st.caption(t("line_breakdown_caption"))
-
-    _line_breakdown = compute_line_breakdown(_remaining_for_dashboard)
-
-    if _line_breakdown.empty:
-        st.html(f"""
-            <div class="empty-state">
-                <div class="empty-state-icon">🚩</div>
-                <div class="empty-state-title">{t('line_breakdown_empty')}</div>
-            </div>
-        """)
-    else:
-        display_breakdown = _line_breakdown.rename(columns={
-            "Hat": t("line_column_label"),
-            "Dolu 20'": t("dash_full_20"),
-            "Boş 20'": t("dash_empty_20"),
-            "Dolu 40'": t("dash_full_40"),
-            "Boş 40'": t("dash_empty_40"),
-            "Toplam": t("batch_total"),
-        })
-        st.dataframe(display_breakdown, use_container_width=True, hide_index=True)
-
-st.write("")
-
-# -------------------------------------------------
-# BEKLEME SÜRESİ ANALİZİ (DWELL TIME)
-# -------------------------------------------------
-
-with st.expander(t("dwell_title"), expanded=False):
-
-    st.caption(t("dwell_caption"))
-
-    _dwell_df = compute_dwell_time(_remaining_for_dashboard, threshold_days=21)
-
-    if _dwell_df.empty:
-        st.html(f"""
-            <div class="empty-state">
-                <div class="empty-state-icon">⏱</div>
-                <div class="empty-state-title">{t('dwell_empty')}</div>
-            </div>
-        """)
-    else:
-        critical_count = int(_dwell_df["Kritik"].sum())
-        st.caption(t("dwell_critical_count", count=critical_count))
-
-        top_dwell = _dwell_df.head(15).drop(columns=["Kritik"]).rename(columns={
-            "Konteyner": t("container_number_result_label").title() if st.session_state.language == "en" else "Konteyner",
-            "Hat": t("line_column_label"),
-            "Boyut": t("size_label"),
-            "Saha": t("area_label"),
-            "Gün": t("dwell_days_column"),
-        })
-        st.dataframe(top_dwell, use_container_width=True, hide_index=True)
-
-st.write("")
-
-# -------------------------------------------------
-# GEMİ / VOYAGE BAZLI GÖRÜNÜM
-# -------------------------------------------------
-
-with st.expander(t("vessel_view_title"), expanded=False):
-
-    st.caption(t("vessel_view_caption"))
-
-    _vessel_voyage_pairs = df[(df["VESSEL NAME"] != "") & (df["VOYAGE NUMBER"] != "")][
-        ["VESSEL NAME", "VOYAGE NUMBER"]
-    ].drop_duplicates()
-
-    if _vessel_voyage_pairs.empty:
-        st.html(f"""
-            <div class="empty-state">
-                <div class="empty-state-icon">🚢</div>
-                <div class="empty-state-title">{t('vessel_view_empty')}</div>
-            </div>
-        """)
-    else:
-        _vessel_options = sorted(
-            (row["VESSEL NAME"], row["VOYAGE NUMBER"]) for _, row in _vessel_voyage_pairs.iterrows()
+    with st.expander(f"{t('shift_summary_title')} — {t('shift_summary_total')}: {_shift_total}", expanded=False):
+        st.caption(t("shift_summary_caption"))
+        _summary_text = build_shift_summary_text(
+            _gate_today_summary, _load_today_summary, _cfs_today_summary, _today_str_dashboard
         )
+        st.code(_summary_text, language=None)
 
-        _selected_vessel_voyage = st.selectbox(
-            t("vessel_view_select"),
-            options=_vessel_options,
-            format_func=lambda x: f"{x[0]} — {x[1]}",
-            key="vessel_view_select"
-        )
+    st.write("")
 
-        if _selected_vessel_voyage:
-            _cfs_for_vessel = load_cfs_records()
-            _vessel_summary = compute_vessel_summary(
-                df, _movements_for_dashboard, _cfs_for_vessel,
-                _selected_vessel_voyage[0], _selected_vessel_voyage[1]
+    st.html(f"""
+    <div class="dashboard-header">
+        <div class="dashboard-title">{t('dashboard_title')}</div>
+        <div class="dashboard-subtitle">{t('dashboard_subtitle')}</div>
+    </div>
+    """)
+
+    d1, d2, d3, d4, d5 = st.columns(5)
+
+    with d1:
+        st.html(f"""
+            <div class="dash-card">
+                <div class="dash-card-accent" style="background:{LINE_COLORS.get('OBT', '#1F6E4A')};"></div>
+                <div class="icon-badge icon-badge-green">📦</div>
+                <div class="dash-label">{t('dash_full_20')}</div>
+                <div class="dash-value">{_dash['dolu_20']:,}</div>
+            </div>
+        """)
+
+    with d2:
+        st.html(f"""
+            <div class="dash-card">
+                <div class="dash-card-accent" style="background:#9CA8B4;"></div>
+                <div class="icon-badge icon-badge-grey">📭</div>
+                <div class="dash-label">{t('dash_empty_20')}</div>
+                <div class="dash-value">{_dash['bos_20']:,}</div>
+            </div>
+        """)
+
+    with d3:
+        st.html(f"""
+            <div class="dash-card">
+                <div class="dash-card-accent" style="background:var(--navy);"></div>
+                <div class="icon-badge icon-badge-navy">📦</div>
+                <div class="dash-label">{t('dash_full_40')}</div>
+                <div class="dash-value">{_dash['dolu_40']:,}</div>
+            </div>
+        """)
+
+    with d4:
+        st.html(f"""
+            <div class="dash-card">
+                <div class="dash-card-accent" style="background:#C7CFD8;"></div>
+                <div class="icon-badge icon-badge-grey">📭</div>
+                <div class="dash-label">{t('dash_empty_40')}</div>
+                <div class="dash-value">{_dash['bos_40']:,}</div>
+            </div>
+        """)
+
+    with d5:
+        st.html(f"""
+            <div class="dash-card dash-teu-card">
+                <div class="icon-badge icon-badge-gold">⚓</div>
+                <div class="dash-label">{t('dash_total_teu')}</div>
+                <div class="dash-value">{_dash['total_teu']:,.1f}</div>
+            </div>
+        """)
+
+    st.write("")
+
+    # -------------------------------------------------
+    # DOLULUK GÖSTERGESİ (RADIAL GAUGE)
+    # -------------------------------------------------
+
+    _classified_total = _dash['dolu_20'] + _dash['bos_20'] + _dash['dolu_40'] + _dash['bos_40']
+    _filled_total = _dash['dolu_20'] + _dash['dolu_40']
+    _empty_total = _dash['bos_20'] + _dash['bos_40']
+    _occupancy_percent = round((_filled_total / _classified_total) * 100, 1) if _classified_total > 0 else 0
+
+    _gauge_svg = build_occupancy_gauge_svg(_occupancy_percent)
+
+    st.html(f"""
+        <div class="gauge-card">
+            <div class="gauge-svg-wrap">
+                {_gauge_svg}
+                <div class="gauge-percent">
+                    {_occupancy_percent:.0f}%
+                    <div class="gauge-percent-label">{t('gauge_full_label')}</div>
+                </div>
+            </div>
+            <div class="gauge-legend">
+                <div class="gauge-title">{t('gauge_title')}</div>
+                <div class="gauge-row">
+                    <span>📦 {t('gauge_filled_row')}</span>
+                    <span class="gauge-row-value">{_filled_total:,}</span>
+                </div>
+                <div class="gauge-row">
+                    <span>📭 {t('gauge_empty_row')}</span>
+                    <span class="gauge-row-value">{_empty_total:,}</span>
+                </div>
+                <div class="gauge-row">
+                    <span>⚓ {t('gauge_teu_row')}</span>
+                    <span class="gauge-row-value">{_dash['total_teu']:,.1f}</span>
+                </div>
+            </div>
+        </div>
+    """)
+
+    st.write("")
+
+    # Kompozisyon çubuğu (oransal görsel özet)
+    _dash_total = max(_dash['total_count'], 1)
+    _seg_dolu20 = _dash['dolu_20'] / _dash_total * 100
+    _seg_bos20 = _dash['bos_20'] / _dash_total * 100
+    _seg_dolu40 = _dash['dolu_40'] / _dash_total * 100
+    _seg_bos40 = _dash['bos_40'] / _dash_total * 100
+    _seg_other = _dash['other_count'] / _dash_total * 100
+
+    st.html(f"""
+        <div class="composition-bar">
+            <div class="composition-segment" style="width:{_seg_dolu20}%; background:#1F6E4A;"></div>
+            <div class="composition-segment" style="width:{_seg_bos20}%; background:#9CA8B4;"></div>
+            <div class="composition-segment" style="width:{_seg_dolu40}%; background:#0F2A44;"></div>
+            <div class="composition-segment" style="width:{_seg_bos40}%; background:#C7CFD8;"></div>
+            <div class="composition-segment" style="width:{_seg_other}%; background:#D4A72C;"></div>
+        </div>
+        <div class="composition-legend">
+            <div class="legend-item"><span class="legend-dot" style="background:#1F6E4A;"></span> {t('dash_full_20')}</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#9CA8B4;"></span> {t('dash_empty_20')}</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#0F2A44;"></span> {t('dash_full_40')}</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#C7CFD8;"></span> {t('dash_empty_40')}</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#D4A72C;"></span> {t('legend_other')}</div>
+        </div>
+    """)
+
+    if _dash['other_count'] > 0:
+        st.caption(f"ℹ {_dash['other_count']} {t('dash_other_note')}")
+
+    st.write("")
+
+    # -------------------------------------------------
+    # GÜNLÜK HAREKET TRENDİ
+    # -------------------------------------------------
+
+    st.markdown(f"**{t('trend_title')}**")
+
+    trend_range_options = {7: t("trend_range_7"), 14: t("trend_range_14"), 30: t("trend_range_30")}
+
+    trend_days = st.radio(
+        t("trend_title"),
+        options=list(trend_range_options.keys()),
+        format_func=lambda x: trend_range_options[x],
+        index=1,
+        horizontal=True,
+        key="trend_range_select",
+        label_visibility="collapsed"
+    )
+
+    _trend_df = compute_daily_trend(_movements_for_dashboard, days=trend_days)
+
+    if _trend_df.to_numpy().sum() == 0:
+        st.html(f"""
+            <div class="empty-state">
+                <div class="empty-state-icon">📈</div>
+                <div class="empty-state-title">{t('trend_empty')}</div>
+                <div class="empty-state-sub">{t('trend_empty_sub')}</div>
+            </div>
+        """)
+    else:
+        st.bar_chart(_trend_df, use_container_width=True, height=220)
+
+    st.write("")
+
+    # -------------------------------------------------
+    # HAT BAZLI ENVANTER DETAYI
+    # -------------------------------------------------
+
+    with st.expander(t("line_breakdown_title"), expanded=False):
+
+        st.caption(t("line_breakdown_caption"))
+
+        _line_breakdown = compute_line_breakdown(_remaining_for_dashboard)
+
+        if _line_breakdown.empty:
+            st.html(f"""
+                <div class="empty-state">
+                    <div class="empty-state-icon">🚩</div>
+                    <div class="empty-state-title">{t('line_breakdown_empty')}</div>
+                </div>
+            """)
+        else:
+            display_breakdown = _line_breakdown.rename(columns={
+                "Hat": t("line_column_label"),
+                "Dolu 20'": t("dash_full_20"),
+                "Boş 20'": t("dash_empty_20"),
+                "Dolu 40'": t("dash_full_40"),
+                "Boş 40'": t("dash_empty_40"),
+                "Toplam": t("batch_total"),
+            })
+            st.dataframe(display_breakdown, use_container_width=True, hide_index=True)
+
+    st.write("")
+
+    # -------------------------------------------------
+    # BEKLEME SÜRESİ ANALİZİ (DWELL TIME)
+    # -------------------------------------------------
+
+    with st.expander(t("dwell_title"), expanded=False):
+
+        st.caption(t("dwell_caption"))
+
+        _dwell_df = compute_dwell_time(_remaining_for_dashboard, threshold_days=21)
+
+        if _dwell_df.empty:
+            st.html(f"""
+                <div class="empty-state">
+                    <div class="empty-state-icon">⏱</div>
+                    <div class="empty-state-title">{t('dwell_empty')}</div>
+                </div>
+            """)
+        else:
+            critical_count = int(_dwell_df["Kritik"].sum())
+            st.caption(t("dwell_critical_count", count=critical_count))
+
+            top_dwell = _dwell_df.head(15).drop(columns=["Kritik"]).rename(columns={
+                "Konteyner": t("container_number_result_label").title() if st.session_state.language == "en" else "Konteyner",
+                "Hat": t("line_column_label"),
+                "Boyut": t("size_label"),
+                "Saha": t("area_label"),
+                "Gün": t("dwell_days_column"),
+            })
+            st.dataframe(top_dwell, use_container_width=True, hide_index=True)
+
+    st.write("")
+
+    # -------------------------------------------------
+    # GEMİ / VOYAGE BAZLI GÖRÜNÜM
+    # -------------------------------------------------
+
+    with st.expander(t("vessel_view_title"), expanded=False):
+
+        st.caption(t("vessel_view_caption"))
+
+        _vessel_voyage_pairs = df[(df["VESSEL NAME"] != "") & (df["VOYAGE NUMBER"] != "")][
+            ["VESSEL NAME", "VOYAGE NUMBER"]
+        ].drop_duplicates()
+
+        if _vessel_voyage_pairs.empty:
+            st.html(f"""
+                <div class="empty-state">
+                    <div class="empty-state-icon">🚢</div>
+                    <div class="empty-state-title">{t('vessel_view_empty')}</div>
+                </div>
+            """)
+        else:
+            _vessel_options = sorted(
+                (row["VESSEL NAME"], row["VOYAGE NUMBER"]) for _, row in _vessel_voyage_pairs.iterrows()
             )
 
-            vv1, vv2, vv3, vv4, vv5 = st.columns(5)
+            _selected_vessel_voyage = st.selectbox(
+                t("vessel_view_select"),
+                options=_vessel_options,
+                format_func=lambda x: f"{x[0]} — {x[1]}",
+                key="vessel_view_select"
+            )
 
-            with vv1:
-                st.html(f"""
-                    <div class="dash-card">
-                        <div class="dash-card-accent" style="background:var(--navy);"></div>
-                        <div class="dash-icon">▣</div>
-                        <div class="dash-label">{t('vessel_view_total')}</div>
-                        <div class="dash-value">{_vessel_summary['total']:,}</div>
-                    </div>
-                """)
-            with vv2:
-                st.html(f"""
-                    <div class="dash-card">
-                        <div class="dash-card-accent" style="background:var(--brass);"></div>
-                        <div class="dash-icon">◷</div>
-                        <div class="dash-label">{t('vessel_view_remaining')}</div>
-                        <div class="dash-value">{_vessel_summary['remaining']:,}</div>
-                    </div>
-                """)
-            with vv3:
-                st.html(f"""
-                    <div class="dash-card">
-                        <div class="dash-card-accent" style="background:#9CA8B4;"></div>
-                        <div class="dash-icon">🚪</div>
-                        <div class="dash-label">{t('vessel_view_gate')}</div>
-                        <div class="dash-value">{_vessel_summary['gate_out']:,}</div>
-                    </div>
-                """)
-            with vv4:
-                st.html(f"""
-                    <div class="dash-card">
-                        <div class="dash-card-accent" style="background:#1F6E4A;"></div>
-                        <div class="dash-icon">🚢</div>
-                        <div class="dash-label">{t('vessel_view_loaded')}</div>
-                        <div class="dash-value">{_vessel_summary['loaded']:,}</div>
-                    </div>
-                """)
-            with vv5:
-                st.html(f"""
-                    <div class="dash-card">
-                        <div class="dash-card-accent" style="background:#0F2A44;"></div>
-                        <div class="dash-icon">📥</div>
-                        <div class="dash-label">{t('vessel_view_cfs')}</div>
-                        <div class="dash-value">{_vessel_summary['cfs']:,}</div>
-                    </div>
-                """)
-
-            st.write("")
-
-            if not _vessel_summary["remaining_containers"].empty:
-                st.caption(t("vessel_view_list_title"))
-                _vv_display_cols = [c for c in ["CONTAINER", "AGENT", "SIZE", "FULL-MTY", "AREA"] if c in _vessel_summary["remaining_containers"].columns]
-                st.dataframe(
-                    _vessel_summary["remaining_containers"][_vv_display_cols],
-                    use_container_width=True, hide_index=True
+            if _selected_vessel_voyage:
+                _cfs_for_vessel = load_cfs_records()
+                _vessel_summary = compute_vessel_summary(
+                    df, _movements_for_dashboard, _cfs_for_vessel,
+                    _selected_vessel_voyage[0], _selected_vessel_voyage[1]
                 )
 
-st.write("")
+                vv1, vv2, vv3, vv4, vv5 = st.columns(5)
 
-# -------------------------------------------------
-# KONSOLİDE RAPOR
-# -------------------------------------------------
+                with vv1:
+                    st.html(f"""
+                        <div class="dash-card">
+                            <div class="dash-card-accent" style="background:var(--navy);"></div>
+                            <div class="dash-icon">▣</div>
+                            <div class="dash-label">{t('vessel_view_total')}</div>
+                            <div class="dash-value">{_vessel_summary['total']:,}</div>
+                        </div>
+                    """)
+                with vv2:
+                    st.html(f"""
+                        <div class="dash-card">
+                            <div class="dash-card-accent" style="background:var(--brass);"></div>
+                            <div class="dash-icon">◷</div>
+                            <div class="dash-label">{t('vessel_view_remaining')}</div>
+                            <div class="dash-value">{_vessel_summary['remaining']:,}</div>
+                        </div>
+                    """)
+                with vv3:
+                    st.html(f"""
+                        <div class="dash-card">
+                            <div class="dash-card-accent" style="background:#9CA8B4;"></div>
+                            <div class="dash-icon">🚪</div>
+                            <div class="dash-label">{t('vessel_view_gate')}</div>
+                            <div class="dash-value">{_vessel_summary['gate_out']:,}</div>
+                        </div>
+                    """)
+                with vv4:
+                    st.html(f"""
+                        <div class="dash-card">
+                            <div class="dash-card-accent" style="background:#1F6E4A;"></div>
+                            <div class="dash-icon">🚢</div>
+                            <div class="dash-label">{t('vessel_view_loaded')}</div>
+                            <div class="dash-value">{_vessel_summary['loaded']:,}</div>
+                        </div>
+                    """)
+                with vv5:
+                    st.html(f"""
+                        <div class="dash-card">
+                            <div class="dash-card-accent" style="background:#0F2A44;"></div>
+                            <div class="dash-icon">📥</div>
+                            <div class="dash-label">{t('vessel_view_cfs')}</div>
+                            <div class="dash-value">{_vessel_summary['cfs']:,}</div>
+                        </div>
+                    """)
 
-with st.expander(t("consolidated_report_title"), expanded=False):
+                st.write("")
 
-    st.caption(t("consolidated_report_caption"))
+                if not _vessel_summary["remaining_containers"].empty:
+                    st.caption(t("vessel_view_list_title"))
+                    _vv_display_cols = [c for c in ["CONTAINER", "AGENT", "SIZE", "FULL-MTY", "AREA"] if c in _vessel_summary["remaining_containers"].columns]
+                    st.dataframe(
+                        _vessel_summary["remaining_containers"][_vv_display_cols],
+                        use_container_width=True, hide_index=True
+                    )
 
-    _report_default_start = datetime.now().date() - timedelta(days=30)
-    _report_date_range = st.date_input(
-        t("date_range_label"),
-        value=(_report_default_start, datetime.now().date()),
-        key="consolidated_report_date_range"
-    )
+    st.write("")
 
-    if isinstance(_report_date_range, tuple) and len(_report_date_range) == 2:
-        _report_start, _report_end = _report_date_range
-    else:
-        _report_start = _report_end = _report_date_range
+    # -------------------------------------------------
+    # KONSOLİDE RAPOR
+    # -------------------------------------------------
 
-    _cfs_for_report = load_cfs_records()
-    _line_breakdown_for_report = compute_line_breakdown(_remaining_for_dashboard)
-    _dwell_for_report = compute_dwell_time(_remaining_for_dashboard, threshold_days=21)
+    with st.expander(t("consolidated_report_title"), expanded=False):
 
-    _consolidated_bytes = build_consolidated_report_excel(
-        df, _remaining_for_dashboard, _movements_for_dashboard, _cfs_for_report,
-        _report_start, _report_end, _dash, _line_breakdown_for_report, _dwell_for_report
-    )
+        st.caption(t("consolidated_report_caption"))
 
-    st.download_button(
-        t("consolidated_report_button"),
-        data=_consolidated_bytes,
-        file_name=f"konsolide_rapor_{_report_start.strftime('%Y%m%d')}_{_report_end.strftime('%Y%m%d')}.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        use_container_width=True
-    )
+        _report_default_start = datetime.now().date() - timedelta(days=30)
+        _report_date_range = st.date_input(
+            t("date_range_label"),
+            value=(_report_default_start, datetime.now().date()),
+            key="consolidated_report_date_range"
+        )
 
-st.write("")
+        if isinstance(_report_date_range, tuple) and len(_report_date_range) == 2:
+            _report_start, _report_end = _report_date_range
+        else:
+            _report_start = _report_end = _report_date_range
+
+        _cfs_for_report = load_cfs_records()
+        _line_breakdown_for_report = compute_line_breakdown(_remaining_for_dashboard)
+        _dwell_for_report = compute_dwell_time(_remaining_for_dashboard, threshold_days=21)
+
+        _consolidated_bytes = build_consolidated_report_excel(
+            df, _remaining_for_dashboard, _movements_for_dashboard, _cfs_for_report,
+            _report_start, _report_end, _dash, _line_breakdown_for_report, _dwell_for_report
+        )
+
+        st.download_button(
+            t("consolidated_report_button"),
+            data=_consolidated_bytes,
+            file_name=f"konsolide_rapor_{_report_start.strftime('%Y%m%d')}_{_report_end.strftime('%Y%m%d')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
+        )
+
+    st.write("")
 
 
-st.write("")
+    st.write("")
 
 
 # =========================================================
@@ -3338,20 +3341,11 @@ available_lines = sorted({
 line_options = [t("line_not_selected")] + available_lines
 
 
-# =========================================================
-# SEKMELER
-# =========================================================
-
-tab_single, tab_batch, tab_gate, tab_load, tab_cfs = st.tabs(
-    [t("tab_single"), t("tab_batch"), t("tab_gate"), t("tab_load"), t("tab_cfs")]
-)
-
-
 # ---------------------------------------------------------
 # TEKLİ ARAMA
 # ---------------------------------------------------------
 
-with tab_single:
+def page_single():
 
     with st.container(border=True):
 
@@ -3642,7 +3636,7 @@ with tab_single:
 # TOPLU DOĞRULAMA
 # ---------------------------------------------------------
 
-with tab_batch:
+def page_batch():
 
     with st.container(border=True):
 
@@ -3770,7 +3764,7 @@ with tab_batch:
 # KAPI ÇIKIŞI
 # ---------------------------------------------------------
 
-with tab_gate:
+def page_gate():
 
     movements = load_movements()
     moved_out = get_moved_out_numbers(movements)
@@ -3986,7 +3980,7 @@ with tab_gate:
 # GEMİYE YÜKLEME
 # ---------------------------------------------------------
 
-with tab_load:
+def page_load():
 
     movements = load_movements()
     moved_out = get_moved_out_numbers(movements)
@@ -4201,7 +4195,7 @@ with tab_load:
 # CFS İÇ BOŞALTIM
 # ---------------------------------------------------------
 
-with tab_cfs:
+def page_cfs():
 
     cfs_records = load_cfs_records()
 
@@ -4568,6 +4562,23 @@ with tab_cfs:
             st.caption(t("cfs_recon_found", count=len(_recon_df)))
             st.dataframe(_recon_df, use_container_width=True, hide_index=True)
 
+
+# =========================================================
+# ÜST NAVİGASYON — HER BAŞLIK KENDİ SAYFASI
+# =========================================================
+
+pg = st.navigation(
+    [
+        st.Page(page_dashboard, title=t("nav_dashboard"), default=True),
+        st.Page(page_single, title=t("tab_single")),
+        st.Page(page_batch, title=t("tab_batch")),
+        st.Page(page_gate, title=t("tab_gate")),
+        st.Page(page_load, title=t("tab_load")),
+        st.Page(page_cfs, title=t("tab_cfs")),
+    ],
+    position="top"
+)
+pg.run()
 
 
 # =========================================================
