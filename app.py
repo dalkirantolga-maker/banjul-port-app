@@ -194,6 +194,7 @@ TRANSLATIONS = {
         "vperf_monthly_table_title": "Aylık TEU Karşılaştırma Tablosu",
         "vperf_agent_compare_title": "Hat Bazlı Çok Yıllı Karşılaştırma",
         "vperf_agent_detail_title": "Seçilen Yıl İçin Detaylı Hat Dağılımı",
+        "vperf_ytd_note": "ℹ {year} yılı henüz tamamlanmadığından, adil kıyaslama için tüm yıllar aynı döneme ({period}) göre karşılaştırılıyor.",
 
         "hero_brand": "LİMAN OPERASYONLARI",
         "hero_title": "Konteyner Takip ve Doğrulama Sistemi",
@@ -484,6 +485,7 @@ TRANSLATIONS = {
         "vperf_monthly_table_title": "Monthly TEU Comparison Table",
         "vperf_agent_compare_title": "Multi-Year Line Comparison",
         "vperf_agent_detail_title": "Detailed Line Breakdown for Selected Year",
+        "vperf_ytd_note": "ℹ Since {year} is not yet complete, all years are compared over the same period ({period}) for a fair comparison.",
 
         "hero_brand": "PORT OPERATIONS",
         "hero_title": "Container Tracking & Verification System",
@@ -2361,6 +2363,8 @@ MONTH_ORDER_TR = [
     "July", "August", "September", "October", "November", "December"
 ]
 
+MONTH_NUM = {month: idx + 1 for idx, month in enumerate(MONTH_ORDER_TR)}
+
 MONTH_LABELS = {
     "tr": {
         "January": "Ocak", "February": "Şubat", "March": "Mart", "April": "Nisan",
@@ -2371,10 +2375,28 @@ MONTH_LABELS = {
 }
 
 
-def compute_vessel_kpis(history_df, year):
-    """Seçilen yıl için özet KPI'ları hesaplar."""
+def get_ytd_cutoff_month(latest_year):
+    """Eğer veri setindeki en güncel yıl, içinde bulunduğumuz takvim yılıysa,
+    içinde bulunduğumuz ay numarasını döndürür (adil 'yıl başından bugüne' kıyaslama
+    için). Farklı bir yılsa (örn. geçmiş bir arşiv inceleniyorsa) None döner ve
+    tam yıl karşılaştırması yapılır."""
+
+    now = datetime.now()
+    if latest_year == now.year:
+        return now.month
+    return None
+
+
+def compute_vessel_kpis(history_df, year, max_month=None):
+    """Seçilen yıl için özet KPI'ları hesaplar. max_month verilirse, sadece o aya
+    kadar olan veriler dahil edilir (adil 'yıl başından bugüne' kıyaslaması için)."""
 
     sub = history_df[history_df["YEAR"] == year]
+
+    if max_month is not None:
+        month_numbers = sub["MONTH"].map(MONTH_NUM)
+        sub = sub[month_numbers <= max_month]
+
     if sub.empty:
         return None
 
@@ -2467,7 +2489,6 @@ def build_yearly_comparison_table_html(kpis_by_year, years, lang="tr"):
         (t("vperf_kpi_teu"), "total_teu", "{:,.0f}"),
         (t("vperf_kpi_containers"), "total_containers", "{:,.0f}"),
         (t("vperf_kpi_avg"), "avg_teu", "{:,.0f}"),
-        (t("vperf_kpi_share40"), "share_40", "{:.1%}"),
     ]
 
     header_cells = f'<th>{safe(t("vperf_metric_col"))}</th>'
@@ -2546,14 +2567,18 @@ def build_monthly_comparison_table_html(monthly_pivot, lang="tr"):
     """
 
 
-def build_agent_comparison_table_html(history_df, years):
-    """Hat bazında, yıllar arası TEU karşılaştırmasını Δ% ile birlikte HTML tablo olarak üretir."""
+def build_agent_comparison_table_html(history_df, years, max_month=None):
+    """Hat bazında, yıllar arası TEU karşılaştırmasını Δ% ile birlikte HTML tablo olarak üretir.
+    max_month verilirse, tüm yıllar aynı aya kadar kesilerek adil kıyaslanır."""
 
     years = sorted(years)
 
     agent_year_teu = {}
     for y in years:
         sub = history_df[history_df["YEAR"] == y]
+        if max_month is not None:
+            month_numbers = sub["MONTH"].map(MONTH_NUM)
+            sub = sub[month_numbers <= max_month]
         agent_year_teu[y] = sub.groupby("AGENT")["TOTAL_TEU"].sum()
 
     all_agents = sorted(set().union(*[set(s.index) for s in agent_year_teu.values()]))
@@ -5076,9 +5101,19 @@ def page_vessel_performance():
     available_years = sorted(history_df["YEAR"].unique())
     lang = st.session_state.get("language", "tr")
 
-    kpis_by_year = {y: compute_vessel_kpis(history_df, y) for y in available_years}
-
     latest_year = max(available_years)
+    ytd_cutoff = get_ytd_cutoff_month(latest_year)
+
+    # Tam yıl verisi (Excel raporu ve "seçili yıl detayı" bölümleri için)
+    kpis_by_year_full = {y: compute_vessel_kpis(history_df, y) for y in available_years}
+
+    # Kıyaslama için kullanılan veri: cari yıl henüz tamamlanmadıysa, adil
+    # karşılaştırma yapabilmek için TÜM yıllar aynı aya kadar kesilir
+    if ytd_cutoff is not None:
+        kpis_by_year = {y: compute_vessel_kpis(history_df, y, max_month=ytd_cutoff) for y in available_years}
+    else:
+        kpis_by_year = kpis_by_year_full
+
     latest_kpi = kpis_by_year[latest_year]
     prev_year = latest_year - 1
     prev_kpi = kpis_by_year.get(prev_year)
@@ -5090,17 +5125,25 @@ def page_vessel_performance():
 
     yoy_teu = _yoy(latest_kpi["total_teu"], prev_kpi["total_teu"]) if prev_kpi else None
 
+    if ytd_cutoff is not None:
+        month_labels = MONTH_LABELS.get(lang, MONTH_LABELS["tr"])
+        period_label = f"{month_labels[MONTH_ORDER_TR[0]]}–{month_labels[MONTH_ORDER_TR[ytd_cutoff-1]]}"
+    else:
+        period_label = None
+
     # -------------------------------------------------
     # ÖNE ÇIKAN YIL — KPI KARTLARI (en güncel yıl)
     # -------------------------------------------------
 
-    vk1, vk2, vk3, vk4, vk5 = st.columns(5)
+    year_label = f"{latest_year} ({period_label})" if period_label else f"{latest_year}"
+
+    vk1, vk2, vk3, vk4 = st.columns(4)
 
     with vk1:
         st.html(f"""
             <div class="dash-card">
                 <div class="icon-badge icon-badge-navy">🚢</div>
-                <div class="dash-label">{latest_year} · {t('vperf_kpi_calls')}</div>
+                <div class="dash-label">{year_label} · {t('vperf_kpi_calls')}</div>
                 <div class="dash-value">{latest_kpi['calls']:,}</div>
             </div>
         """)
@@ -5114,7 +5157,7 @@ def page_vessel_performance():
         st.html(f"""
             <div class="dash-card">
                 <div class="icon-badge icon-badge-gold">⚓</div>
-                <div class="dash-label">{latest_year} · {t('vperf_kpi_teu')}</div>
+                <div class="dash-label">{year_label} · {t('vperf_kpi_teu')}</div>
                 <div class="dash-value">{latest_kpi['total_teu']:,.0f}</div>
                 {yoy_html}
             </div>
@@ -5124,26 +5167,17 @@ def page_vessel_performance():
         st.html(f"""
             <div class="dash-card">
                 <div class="icon-badge icon-badge-green">📦</div>
-                <div class="dash-label">{latest_year} · {t('vperf_kpi_containers')}</div>
+                <div class="dash-label">{year_label} · {t('vperf_kpi_containers')}</div>
                 <div class="dash-value">{latest_kpi['total_containers']:,.0f}</div>
             </div>
         """)
 
     with vk4:
         st.html(f"""
-            <div class="dash-card">
-                <div class="icon-badge icon-badge-navy">📊</div>
-                <div class="dash-label">{latest_year} · {t('vperf_kpi_avg')}</div>
-                <div class="dash-value">{latest_kpi['avg_teu']:,.0f}</div>
-            </div>
-        """)
-
-    with vk5:
-        st.html(f"""
             <div class="dash-card dash-teu-card">
-                <div class="icon-badge icon-badge-gold">📐</div>
-                <div class="dash-label">{latest_year} · {t('vperf_kpi_share40')}</div>
-                <div class="dash-value">{latest_kpi['share_40']*100:.1f}%</div>
+                <div class="icon-badge icon-badge-gold">📊</div>
+                <div class="dash-label">{year_label} · {t('vperf_kpi_avg')}</div>
+                <div class="dash-value">{latest_kpi['avg_teu']:,.0f}</div>
             </div>
         """)
 
@@ -5155,6 +5189,9 @@ def page_vessel_performance():
 
     st.markdown(f"**{t('vperf_compare_title')}**")
     st.caption(t("vperf_compare_caption"))
+
+    if period_label:
+        st.info(t("vperf_ytd_note", period=period_label, year=latest_year))
 
     st.html(build_yearly_comparison_table_html(kpis_by_year, available_years, lang))
 
@@ -5190,7 +5227,7 @@ def page_vessel_performance():
         st.caption(t("vperf_agent_caption"))
 
         st.markdown(f"**{t('vperf_agent_compare_title')}**")
-        st.html(build_agent_comparison_table_html(history_df, available_years))
+        st.html(build_agent_comparison_table_html(history_df, available_years, max_month=ytd_cutoff))
 
         st.write("")
         st.markdown(f"**{t('vperf_agent_detail_title')}**")
@@ -5221,7 +5258,7 @@ def page_vessel_performance():
     st.write("")
 
     # -------------------------------------------------
-    # KONTEYNER KATEGORİ KIRILIMI (seçili yıl)
+    # KONTEYNER KATEGORİ KIRILIMI (seçili yıl, tam yıl verisi)
     # -------------------------------------------------
 
     with st.expander(t("vperf_breakdown_title"), expanded=False):
@@ -5231,7 +5268,7 @@ def page_vessel_performance():
         breakdown_year = st.selectbox(
             t("vperf_year_select"), sorted(available_years, reverse=True), key="vperf_breakdown_year"
         )
-        breakdown_kpi = kpis_by_year.get(breakdown_year)
+        breakdown_kpi = kpis_by_year_full.get(breakdown_year)
 
         if breakdown_kpi is None:
             st.caption(t("vperf_no_data"))
@@ -5249,7 +5286,7 @@ def page_vessel_performance():
     st.write("")
 
     # -------------------------------------------------
-    # EXCEL RAPORU
+    # EXCEL RAPORU (tam yıl verisiyle, arşiv amaçlı)
     # -------------------------------------------------
 
     with st.container(border=True):
@@ -5257,7 +5294,7 @@ def page_vessel_performance():
         st.markdown(f"**{t('vperf_export_title')}**")
         st.caption(t("vperf_export_caption"))
 
-        vperf_excel_bytes = build_vessel_history_excel(history_df, kpis_by_year, monthly_pivot)
+        vperf_excel_bytes = build_vessel_history_excel(history_df, kpis_by_year_full, monthly_pivot)
 
         st.download_button(
             t("vperf_export_button"),
