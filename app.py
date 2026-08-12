@@ -25,7 +25,7 @@ except Exception:
 st.set_page_config(
     page_title="ALPORT Konteyner Takip",
     page_icon="⚓",
-    layout="centered",
+    layout="wide",
     initial_sidebar_state="collapsed"
 )
 
@@ -1072,9 +1072,16 @@ code, .stCode, div[data-testid="stTextInput"] input, div[data-testid="stTextArea
 .stApp { background: var(--bg); }
 
 .block-container {
-    max-width: 960px;
-    padding-top: 1.4rem;
+    max-width: 1400px;
+    padding-top: 1.6rem;
     padding-bottom: 3rem;
+    padding-left: 3.5rem;
+    padding-right: 3.5rem;
+    margin: 0 auto;
+}
+
+@media (max-width: 1500px) {
+    .block-container { max-width: 92%; }
 }
 
 
@@ -3249,7 +3256,7 @@ if st.session_state.toast_message:
 # ÜST ARAÇ ÇUBUĞU
 # =========================================================
 
-lang_col, staff_col, contrast_col = st.columns([2.2, 2.8, 2])
+lang_col, staff_col, contrast_col, _toolbar_spacer = st.columns([2, 2.5, 1.8, 5])
 
 with lang_col:
     lang_choice = st.selectbox(
