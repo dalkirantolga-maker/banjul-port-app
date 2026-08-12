@@ -713,6 +713,32 @@ BASE_CSS = """
 footer { visibility: hidden; }
 .stDeployButton { display: none !important; }
 
+/* Üst navigasyon çubuğunu (Dashboard | Tekli Arama | ...) markaya uygun,
+   dikkat çekici bir bant haline getir. Streamlit bu navigasyonu <header>
+   içine render ediyor; iç yapının test-id'leri belgelenmediği için tüm
+   konteyneri renklendirip, içindeki metin/simgeleri beyaza çeviriyoruz. */
+header {
+    background: linear-gradient(90deg, #0A1E33, #0F2A44 55%, #123A5C) !important;
+    border-bottom: 3px solid #B8860B !important;
+    box-shadow: 0 3px 14px rgba(15,42,68,0.25) !important;
+    min-height: 3.4rem !important;
+}
+
+header p, header span, header a, header button, header div {
+    color: #F4F6F8 !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.3px;
+}
+
+header button[aria-selected="true"], header a[aria-selected="true"] {
+    color: #D4A72C !important;
+    border-bottom: 2px solid #D4A72C !important;
+}
+
+header svg {
+    fill: #F4F6F8 !important;
+}
+
 
 /* =====================================================
    SİSTEM DURUM ŞERİDİ
